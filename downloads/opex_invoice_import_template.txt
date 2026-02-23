@@ -1,0 +1,2 @@
+Date	Invoice Number	Company	Description	Amount
+01/01/2024	INV-1234	Company Name	123.45

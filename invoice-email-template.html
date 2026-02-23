@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Invoice</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,minimum-scale=1">
+	<style>
+		body {
+			background-color: #f3f4f7;
+			font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+			box-sizing: border-box;
+			font-size: 16px;
+			padding: 5px;
+		}
+
+		div {
+			padding: 50px;
+			background-color: #fff;
+			margin: 20px auto;
+			box-sizing: border-box;
+			font-size: 16px;
+			max-width: 600px;
+		}
+
+		h1 {
+			box-sizing: border-box;
+			font-size: 26px;
+			color: #474a50;
+			font-weight: 600;
+			margin: 5px;
+			text-align: left;
+		}
+
+		h2 {
+			box-sizing: border-box;
+			font-size: 14px;
+			color: #474a50;
+			font-weight: 600;
+			margin: 5px;
+			text-align: left;
+		}
+
+		p {
+			box-sizing: border-box;
+			font-size: 14px;
+			margin: 0;
+			padding: 15px 0 15px 0;
+			line-height: normal;
+		}
+
+		b {
+			line-height: 2;
+		}
+
+		#button {
+			display: inline-block;
+			background-color: #3d82d1;
+			text-decoration: none;
+			color: #fff;
+			box-sizing: border-box;
+			font-size: 14px;
+			font-weight: 500;
+			padding: 10px 15px;
+			border-radius: 4px;
+		}
+
+		#footer {
+			padding: 0 0 0 50px;
+			background-color: #f3f4f7;
+			margin: 0px auto;
+			box-sizing: border-box;
+			font-size: 16px;
+			max-width: 600px;
+		}
+	</style>
+</head>
+
+<body>
+	<div>
+		<img src="https://leasemanager.co.nz/img/company_logos/%propertymanagerlogo%" width="300px">
+
+		<p>Hello,<br><br>Please find below a link for invoice <b>%invoicenumber%</b></p>
+		<p>%invoicedescription%</p>
+
+		<h1>$%invoicetotal%</h1>
+
+		<p><a id="button" href="https://leasemanager.co.nz/previewinvoice.php?token=%token%">View invoice</a></p>
+
+		<p>The amount outstanding is due on or before %duedate%</p>
+		<p>Thanks,<br>
+			<b>%propertymanager%</b>
+		</p>
+
+		<span style="font-size:11px;">Powered by:</span><br>
+		<a href="https://leasemanager.co.nz"><img src="https://leasemanager.co.nz/img/LeaseManager_logo_black_v2_300.png"
+				alt="Lease Manager" width="200px"></a>
+	</div>
+</body>
+
+</html>

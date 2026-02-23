@@ -1,0 +1,10 @@
+1. Changed footer  text to Landstream Software
+2. Added propertyManagerContactID to the Lease table
+3. Added Property Manager Contact to viewlease.php
+4. Added Property Manager Contact to editlease.php
+	Need to modify the View to include this field
+	[Need to create a view to show Property Manager Contacts only.] done
+Need to add the Proprty Management company to lease or a premises then look up the contacts for the property manager to list as the contact for that lease.
+5. Added the property manager contact id, first and last names to the Leases_view.
+6. Add createdOn field to opexinvoices table.
+7. updated the previewinvoice2.php

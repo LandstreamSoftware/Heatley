@@ -1,0 +1,32 @@
+{
+    "name": "Lease Manager Inspector",
+    "short_name": "Inspector (Dev)",
+    "start_url": "/pwa/index.php",
+    "display": "standalone",
+    "theme_color": "#156082",
+    "background_color": "#156082",
+    "icons": [
+        {
+            "src": "/pwa/assets/icons/web-app-manifest-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/pwa/assets/icons/web-app-manifest-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/pwa/assets/icons/favicon.ico",
+            "sizes": "32x32 48x48 64x64",
+            "type": "image/x-icon"
+        },
+        {
+            "src": "/pwa/assets/icons/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

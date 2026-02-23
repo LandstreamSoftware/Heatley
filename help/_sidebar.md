@@ -1,0 +1,5 @@
+- **Introduction**
+  - [Welcome to the Heatley Portal Help](/)
+- **User**
+  - [Connecting to Xero](connecting-to-xero.md)
+  - [Terms of Use](terms_of_use.md)

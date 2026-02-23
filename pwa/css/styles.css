@@ -1,0 +1,241 @@
+html,
+body {
+    background-color: #156082;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 300;
+    /* Use 300 for lightest available weight in Quicksand */
+    font-size: 1rem;
+    /* Use large size for thin fonts */
+    color: #ffffff;
+    margin: 1.1rem;
+    /* padding: 1rem;
+    max-width: 600px; */
+    margin: auto;
+}
+
+.heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-size: 1.25rem;
+    font-weight: 500;
+    padding: 10px 0px;
+    margin-bottom: 15px;
+    background-color: rgb(121, 180, 207);
+    color: #156082;
+}
+
+.heading-text {
+    margin-right: 30px;
+}
+
+.inspector {
+    font-size: 0.9rem;
+    margin-right: 15px;
+}
+
+/*
+.inspector {
+    font-family: 'Roboto', sans-serif;
+    font-style: italic;
+    font-size: 26px;
+    font-weight: 100;
+    text-align: center;
+    
+}
+    */
+
+p {
+    font-weight: 400;
+    /* Normal for body text */
+}
+
+
+a:link,
+a:visited {
+    text-decoration: none;
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 300;
+    color: #ffffff;
+}
+
+a:hover {
+    color: #84b2f8;
+}
+
+.center {
+    text-align: center;
+}
+
+#logo {
+    text-align: center;
+}
+
+.home-icon {
+    margin-left: 10px;
+}
+
+input[type="file"] {
+    display: none;
+
+}
+
+input[type="checkbox"] {
+    display: inline-block;
+    margin-right: 5px;
+    background-color: #ffffff;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: rgb(121, 180, 207);
+    color: #fff;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.button:hover {
+    background-color: #e07c39;
+}
+
+.btn-action {
+    width: 200px;
+    margin-top: 25px;
+}
+
+form {
+    padding: 0 25px 0 25px;
+    margin: 0px;
+}
+
+input,
+textarea,
+button,
+select {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    margin-top: 0.3rem;
+    padding: 0.6rem;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    color: #000000;
+    border-radius: 5px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="checkbox"] {
+    display: inline-block;
+    width: auto;
+    margin-bottom: 0;
+    margin-right: 0.4rem;
+    color: blueviolet;
+}
+
+label {
+    text-align: left;
+}
+
+.remember {
+    display: block;
+    text-align: left;
+    margin-top: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+#inspections-list {
+    margin-top: 2rem;
+    padding: 0 25px 0 25px;
+}
+
+
+div.gallery {
+    margin: 5px;
+    border: 1px solid #ccc;
+    float: left;
+    width: 30%;
+    box-sizing: border-box;
+}
+
+div.gallery:hover {
+    border: 1px solid #777;
+}
+
+div.gallery img {
+    width: 100%;
+    height: auto;
+}
+
+div.desc {
+    padding: 15px;
+    text-align: center;
+}
+
+
+
+
+
+
+
+.overlay {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    background-color: #458bab;
+    overflow-x: hidden;
+    transition: 0.5s;
+}
+
+.overlay-content {
+    position: relative;
+    top: 25%;
+    width: 100%;
+    text-align: left;
+    margin-top: 30px;
+}
+
+.overlay a {
+    padding: 10px 0 10px 20px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #ebf0f1;
+    display: block;
+    transition: 0.3s;
+}
+
+.overlay a:hover,
+.overlay a:focus {
+    color: #003852;
+}
+
+.overlay .closebtn {
+    position: absolute;
+    top: 0px;
+    right: 20px;
+    font-size: 40px;
+}
+
+@media screen and (max-height: 450px) {
+    .overlay a {
+        font-size: 20px
+    }
+
+    .overlay .closebtn {
+        font-size: 40px;
+        top: 15px;
+        right: 35px;
+    }
+}
