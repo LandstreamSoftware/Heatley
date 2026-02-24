@@ -18,6 +18,59 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
+require 'vendor/autoload.php';
+
+$sql1 = "SELECT * FROM accounts WHERE id = $accountid";
+$result1 = $con->query($sql1);
+if ($result1->num_rows > 0) {
+    while($row1 = $result1->fetch_assoc()) {
+       $companyid = $row1["companyID"]; 
+    }
+}
+
+
+$myNewToken = check_xero_token_expiry($con, $companyid);
+
+if (isset($myNewToken)) {
+    $accesstoken = $myNewToken;
+}
+
+$config = XeroAPI\XeroPHP\Configuration::getDefaultConfiguration()->setAccessToken($accesstoken);
+
+// Initialize Identity API
+$identityApi = new XeroAPI\XeroPHP\Api\IdentityApi(
+    new GuzzleHttp\Client(),
+    $config // Your standard configuration with the access token
+);
+
+// Get all connections
+$connections = $identityApi->getConnections();
+
+
+$apiInstance = new XeroAPI\XeroPHP\Api\AccountingApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+use XeroAPI\XeroPHP\Models\Accounting\Invoice;
+
+
+$ifModifiedSince = null; //new DateTime("2020-02-06T12:17:43.202-08:00");
+$today = date('d M Y');
+$where = null;
+$order = 'Name';
+$iDs = null; //array("00000000-0000-0000-0000-000000000000");
+$invoiceNumbers = null; //array("INV-001", "INV-002");
+$contactIDs = null; //array("00000000-0000-0000-0000-000000000000");
+$statuses = array("ACTIVE"); //array("AUTHORISED");
+$page = 1;
+$includeArchived = null; //true;
+$createdByMyApp = null; //false;
+$unitdp = null; //4;
+$summaryOnly = false;
+$pageSize = 100;
+$searchTerm = null; //"SearchTerm=REF12";
+
 ?>
 
 <?=template_header('Edit XeroAuthentication Credentials')?>
@@ -275,6 +328,14 @@ $sql2 = "UPDATE xero_oauth_tokens SET tenant_id = '$tenantid', access_token_expi
         </div>
         </form>
 
+        
+
+
+
+
+
+
+
         <div class="row">
             <div class="col-sm-10" style="text-align:right;">
                 <form id="manualRefreshForm" method="post" style="display:inline">
@@ -287,6 +348,58 @@ $sql2 = "UPDATE xero_oauth_tokens SET tenant_id = '$tenantid', access_token_expi
                 <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $companyid; ?>"><img src="../img/connect-white.svg"></a>
             </div>
         </div>
+
+
+
+<div class="row">
+            <div class="col-sm-5">
+                <h3>Xero Tracking Categories</h3>
+            </div>
+        </div>
+
+<?php
+foreach ($connections as $connection) {
+    try {
+        $xeroTenantId = $connection->getTenantId();
+        $xeroTenantName = $connection->getTenantName();
+        ?>
+        
+        <div class="row">
+            <div class="col-sm-5">
+            <h4 style="padding:15px 0 15px 0;"><?=$xeroTenantName?></h4>
+            </div> 
+        </div>
+        <?php
+        $result = $apiInstance->getTrackingCategories($xeroTenantId, $ifModifiedSince, $where, $order, $iDs, $invoiceNumbers, $contactIDs, $statuses, $page, $includeArchived, $createdByMyApp, $unitdp, $summaryOnly, $pageSize, $searchTerm);
+
+        $trackingCategories = $result->getTrackingCategories();
+        
+        foreach ($trackingCategories as $cat) {
+            echo "<div class=\"row\">
+                <div class=\"col-sm-3\"><a href= \"https://go.xero.com/Setup/Tracking.aspx\">" . $cat->getName() . "</a></div>        
+                <div class=\"col-sm-2\">" . $cat->getStatus() . "</div>
+             </div>";
+
+            $trackingOptions = $cat->getOptions();
+
+            foreach ($trackingOptions as $option) {
+                echo "<div class=\"row\">
+                <div class=\"col-sm-1\"></div>
+                <div class=\"col-sm-2\">" . $option->getName() . "</div>    
+                <div class=\"col-sm-2\">" . $option->getStatus() . "</div>
+                </div>";
+            }
+        }
+
+
+    } catch (Exception $e) {
+    echo 'Exception when calling AccountingApi->getInvoices: ', $e->getMessage(), PHP_EOL;
+    }
+
+}
+?>
+
+
     
         <div class="row">
         <?php
