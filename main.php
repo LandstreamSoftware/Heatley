@@ -33,9 +33,9 @@ function template_header($title)
             Invoices
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="listtransactions.php?type=1&order=transactiondate DESC">Invoices</a></li>
+            <li><a class="dropdown-item" href="../listtransactions.php?type=1&order=transactiondate DESC">Invoices</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="listtransactions.php?type=2&opex=0">Opex Bills</a></li>
+            <li><a class="dropdown-item" href="../listtransactions.php?type=2&opex=0">Opex Bills</a></li>
           </ul>
         </li>
 	<li class="nav-item ps-3">
@@ -49,28 +49,28 @@ function template_header($title)
             Invoices
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="listtransactions.php?type=1&order=transactiondate DESC">Invoices</a></li>
+            <li><a class="dropdown-item" href="../listtransactions.php?type=1&order=transactiondate DESC">Invoices</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="listtransactions.php?type=2&opex=0">Opex Bills</a></li>
+            <li><a class="dropdown-item" href="../listtransactions.php?type=2&opex=0">Opex Bills</a></li>
           </ul>
         </li>
 	<li class="nav-item ps-3">
-          <a class="nav-link" href="listbankaccounts.php">Banking</a>
+          <a class="nav-link" href="../listbankaccounts.php">Banking</a>
     </li>
 	<li class="nav-item ps-3 dropdown">
 		<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 		Xero
 		</a>
 		<ul class="dropdown-menu">
-		<li><a class="dropdown-item" href="xero-invoices.php">Xero Invoices</a></li>
+		<li><a class="dropdown-item" href="../xero-invoices.php">Xero Invoices</a></li>
 		<li><hr class="dropdown-divider"></li>
-		<li><a class="dropdown-item" href="xero-bills.php">Xero Bills</a></li>
+		<li><a class="dropdown-item" href="../xero-bills.php">Xero Bills</a></li>
 		<li><hr class="dropdown-divider"></li>
 		<li><a class="dropdown-item" href="https://login.xero.com" target="_blank">Log in to Xero</a></li>
 		</ul>
 	</li>
 	<li class="nav-item ps-3">
-		<a class="nav-link" href="admin/index.php" target="_blank">Admin</a>
+		<a class="nav-link" href="../admin/index.php" target="_blank">Admin</a>
 	</li>' : '';
 
 
@@ -83,7 +83,7 @@ function template_header($title)
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width,minimum-scale=1">
 		<title>' . $title . '</title>
-		<link href="style.css" rel="stylesheet" type="text/css">
+		<link href="../style.css" rel="stylesheet" type="text/css">
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 	<!--	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
@@ -129,7 +129,7 @@ function template_header($title)
 
 <nav class="navbar navbar-expand-xl bg-body-tertiary" data-bs-theme="dark">
   <div class="container-fluid">
-    <a href="home.php" style="padding-right:8px;"><img width="180px" src="img/heatley_portal_white_180.png"></a>
+    <a href="home.php" style="padding-right:8px;"><img width="180px" src="..//img/heatley_portal_white_180.png"></a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -137,7 +137,7 @@ function template_header($title)
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
         <li class="nav-item ps-3">
-          <a class="nav-link" href="home.php?timespan=90&expiretimespan=90&compliancetimespan=90">Home</a>
+          <a class="nav-link" href="../home.php?timespan=90&expiretimespan=90&compliancetimespan=90">Home</a>
         </li>
 		
 		<li class="nav-item ps-3 dropdown">
@@ -145,9 +145,9 @@ function template_header($title)
             Contacts
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="listcompanies.php">Companies</a></li>
+            <li><a class="dropdown-item" href="../listcompanies.php">Companies</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="listcontacts.php">Contacts</a></li>
+            <li><a class="dropdown-item" href="../listcontacts.php">Contacts</a></li>
           </ul>
         </li>
 
@@ -157,16 +157,16 @@ function template_header($title)
 		' . $admin_panel_link . '
 
 		<li class="nav-item ps-3">
-          <a class="nav-link" href="listreports.php">Reports</a>
+          <a class="nav-link" href="../listreports.php">Reports</a>
         </li>
 
 
 		<li class="nav-item ps-3">
-          <a class="nav-link" href="help/" target="_blank">Help</a>
+          <a class="nav-link" href="../help/" target="_blank">Help</a>
         </li>
 
 		<li class="nav-item ps-3">
-        	<a href="logout.php" class="nav-link">
+        	<a href="../logout.php" class="nav-link">
 				<svg width="12" height="12" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"/></svg>
 				Logout
 			</a>
@@ -174,7 +174,7 @@ function template_header($title)
 	  </ul>
     </div>
 	<p class="collapse navbar-collapse" id="navbarSupportedContent" style="color:#999; font-size:12px; padding:15px 0 0 40px;">
-	<a href="profile.php" style="color:inherit; text-decoration:none; font-size:12px;">' ?>
+	<a href="../profile.php" style="color:inherit; text-decoration:none; font-size:12px;">' ?>
 	<?= htmlspecialchars($_SESSION['account_name'], ENT_QUOTES) ?>
 	<?php echo '</a><br></p>
   </div>
@@ -506,7 +506,7 @@ function check_xero_token_expiry($con, $companyid)
 		}
 	} else {
 		// No Xero authentication found
-		header("Location: xero-add_authentication_credentials.php");
+		header("Location: ../xero-add_authentication_credentials.php");
 		exit;
 	}
 
