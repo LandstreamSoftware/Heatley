@@ -1,6 +1,6 @@
 <?php
 // Include the main.php file
-include 'main.php';
+include '../main.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
@@ -19,7 +19,7 @@ if ($resultAccess->num_rows > 0) {
 }
 
 
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 
 $sql1 = "SELECT * FROM accounts WHERE id = $accountid";
 $result1 = $con->query($sql1);

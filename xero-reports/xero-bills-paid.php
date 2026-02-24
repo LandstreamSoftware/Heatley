@@ -1,6 +1,6 @@
 <?php
 // Include the main.php file
-include 'main.php';
+include '../main.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
@@ -18,13 +18,9 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-<<<<<<< HEAD
 $searchperiod = 0;
-=======
-$searchperiod = 1;
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
 
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (!empty($_POST["searchperiod"])) {
@@ -32,69 +28,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   }
 }
 
-<<<<<<< HEAD
 $nowD = date('d');
 $nowM = date('m');
 $nowY = date('Y');
 
 if ($searchperiod == 12) { // This financial year
-=======
-$nowM = date('m');
-$nowY = date('Y');
-
-if ($searchperiod == 12) {
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
     if ($nowM < 4) {
         $y = $nowY - 1;
     } else {
         $y = $nowY;
     }
     $m = 4;
-<<<<<<< HEAD
     $endDate = $nowY."-".$nowM."-".$nowD;
     $end = date_create($endDate);
     date_add($end,date_interval_create_from_date_string("1 month"));
 } elseif ($searchperiod == 1) { // Last month
-=======
-    $endDate = $nowY."-".$nowM."-1";
-    $end = date_create($endDate);
-    date_add($end,date_interval_create_from_date_string("1 month"));
-} elseif ($searchperiod == 1) {
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
     if ($nowM  == 1) {
         $m = 12;
         $y = $nowY - 1;
     } else {
-<<<<<<< HEAD
         $m = $nowM - 1;
-=======
-        $m = $m - 1;
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
         $y = $nowY;
     }
     $endDate = $nowY."-".$nowM."-1";
     $end = date_create($endDate);
     date_sub($end,date_interval_create_from_date_string("1 day"));
-<<<<<<< HEAD
 } elseif ($searchperiod == 2) { // Two months ago
     if ($nowM  == 2) {
         $m = 12;
         $y = $nowY - 1;
-=======
-} elseif ($searchperiod == 2) {
-    if ($nowM  == 2) {
-        $m = 12;
-        $y = $y - 1;
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
     } elseif ($nowM == 1) {
         $m = 11;
         $y = $nowY - 1;
     } else {
-<<<<<<< HEAD
         $m = $nowM - 2;
-=======
-        $m = $m - 2;
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
         $y = $nowY;
     }
     $endDate = $nowY."-".$nowM."-1";
@@ -103,11 +70,7 @@ if ($searchperiod == 12) {
 } else { //$searchperiod = 0 (this month)
     $m = $nowM;
     $y = $nowY;
-<<<<<<< HEAD
     $endDate = $nowY."-".$nowM."-".$nowD;
-=======
-    $endDate = $nowY."-".$nowM."-1";
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
     $end = date_create($endDate);
     date_add($end,date_interval_create_from_date_string("1 month"));
 }
@@ -188,11 +151,7 @@ $searchTerm = null; //"SearchTerm=REF12";
 	</div>	
 	<div class="wrap">
 		<h2>Xero Paid Bills</h2>
-<<<<<<< HEAD
     <!--    <p><?php echo "from: ".$fromDate." to: ".$toDate." (".$searchperiod.")";?></p>  -->
-=======
-    <!--    <p><?php echo "filter: ".$where;?></p>  -->
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
 	</div>
 </div>
 
@@ -202,11 +161,7 @@ $searchTerm = null; //"SearchTerm=REF12";
     </div> 
 
     <div class="col-sm-6">
-<<<<<<< HEAD
         <form class="form form-medium" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" style="display:flex;">
-=======
-        <form class="form form-medium" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"].'?searchperiod='.$searchperiod);?>" style="display:flex;">
->>>>>>> 7ba9896ab7466376c6725dff0da138a8bc4d77d7
         <div class="form-group">
             <label class="form-label" for="searchperiod">Search period:</label>
             <div class="col-sm-7">

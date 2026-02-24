@@ -1,6 +1,6 @@
 <?php
 // Include the main.php file
-include 'main.php';
+include '../main.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
@@ -20,7 +20,7 @@ if ($resultAccess->num_rows > 0) {
 
 $searchperiod = 0;
 
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (!empty($_POST["searchperiod"])) {

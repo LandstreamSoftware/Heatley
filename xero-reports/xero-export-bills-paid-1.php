@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-include_once 'config.php';
-include_once 'main.php';
-require 'vendor/autoload.php';
+include_once '../config.php';
+include_once '../main.php';
+require '../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;

@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 // Include the main.php file
-include 'main.php';
+include '../main.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 
-require 'vendor/autoload.php';
+require '../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
