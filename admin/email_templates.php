@@ -53,9 +53,9 @@ if (file_exists('../resetpass-email-template.html')) {
     $resetpass_email_template = file_get_contents('../resetpass-email-template.html');
 }
 // Read the renewal reminder notification email template HTML file
-if (file_exists('../email-template-renewal-notification.html')) {
-    $email_template_renewal_notification = file_get_contents('../email-template-renewal-notification.html');
-}
+//if (file_exists('../email-template-renewal-notification.html')) {
+//    $email_template_renewal_notification = file_get_contents('../email-template-renewal-notification.html');
+//}
 // Handle success messages
 if (isset($_GET['success_msg'])) {
     if ($_GET['success_msg'] == 1) {

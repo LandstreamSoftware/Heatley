@@ -160,6 +160,10 @@ function template_header($title)
           <a class="nav-link" href="../listreports.php">Reports</a>
         </li>
 
+		<li class="nav-item ps-3">
+          <a class="nav-link" href="../listartworks.php">Artwork</a>
+        </li>
+
 
 		<li class="nav-item ps-3">
           <a class="nav-link" href="../help/" target="_blank">Help</a>
