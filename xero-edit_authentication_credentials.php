@@ -5,10 +5,22 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$sqlAccess = "SELECT *
+    FROM accesscontrol
+    WHERE accountID = ?";
+$stmt = $con->prepare($sqlAccess);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -20,8 +32,17 @@ if ($resultAccess->num_rows > 0) {
 
 require 'vendor/autoload.php';
 
-$sql1 = "SELECT * FROM accounts WHERE id = $accountid";
-$result1 = $con->query($sql1);
+$sql1 = "SELECT * 
+         FROM accounts 
+         WHERE id = ?";
+$stmt = $con->prepare($sql1);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$result1 = $stmt->get_result();
+
 if ($result1->num_rows > 0) {
     while($row1 = $result1->fetch_assoc()) {
        $companyid = $row1["companyID"]; 
@@ -100,9 +121,16 @@ $Q = explode("/", $_SERVER['QUERY_STRING']);
 parse_str($Q[0],$QueryParameters);
 $companyid = $QueryParameters['cid'];
 
-
-$sql = "SELECT * from xero_oauth_tokens WHERE companyID = $companyid";
-$result = $con->query($sql);
+$sql = "SELECT *
+    FROM xero_oauth_tokens
+    WHERE companyID = ?";
+$stmt = $con->prepare($sql);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $companyid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
@@ -219,9 +247,40 @@ function test_input($data) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token']) and $tenantidErr == NULL and $tokenexpiresatErr == NULL and $accesstokenErr == NULL and $refreshtokenErr == NULL and $scopesErr == NULL and $tokenversionErr == NULL and $clientidErr == NULL and $clientsecretErr == NULL and $redirecturiErr == NULL) {
 
     //prepare and bind
-$sql2 = "UPDATE xero_oauth_tokens SET tenant_id = '$tenantid', access_token_expires_at = '$tokenexpiresat', access_token = '$accesstoken', refresh_token = '$refreshtoken', scopes = '$scopes', token_version = '$tokenversion', client_id = '$clientid', client_secret = '$clientsecret', redirect_uri = '$redirecturi' WHERE companyID = $companyid";
+    $sql2 = "UPDATE xero_oauth_tokens
+            SET tenant_id = ?,
+                access_token_expires_at = ?,
+                access_token = ?,
+                refresh_token = ?,
+                scopes = ?,
+                token_version = ?,
+                client_id = ?,
+                client_secret = ?,
+                redirect_uri = ?
+            WHERE companyID = ?";
 
-    if ($con->query($sql2) === TRUE) {
+    $stmt = $con->prepare($sql2);
+
+    if (!$stmt) {
+        die("Prepare failed: " . $con->error);
+    }
+
+    $stmt->bind_param(
+        "sssssssssi",
+        $tenantid,
+        $tokenexpiresat,
+        $accesstoken,
+        $refreshtoken,
+        $scopes,
+        $tokenversion,
+        $clientid,
+        $clientsecret,
+        $redirecturi,
+        $companyid
+    );
+
+    if ($stmt->execute()) {
+        // success
 
         echo '<table class="table table-hover">
         <tbody>

@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -18,8 +24,14 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-$sqluser = "SELECT * FROM accounts WHERE id = $accountid";
-$resultuser = $con->query($sqluser);
+$sqluser = "SELECT * FROM accounts WHERE id = ?";
+$stmt = $con->prepare($sqluser);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$resultuser = $stmt->get_result();
 
 //while($rowuser = $resultuser->fetch_assoc()) {
 //    $recordownerid = $rowuser["companyID"]; 
@@ -107,8 +119,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (!preg_match("/^[0-9' ]*$/", $companyid)) {
             $companyidErr = "Only numbers allowed";
         }
-        $sql3 = "SELECT idcompany, recordOwnerID FROM companies WHERE idcompany = $companyid";
-        $resultrecordownler = $con->query($sql3);
+
+        $sql3 = "SELECT idcompany, recordOwnerID
+         FROM companies
+         WHERE idcompany = ?";
+        $stmt = $con->prepare($sql3);
+
+        if (!$stmt) {
+            die("Prepare failed: " . $con->error);
+        }
+        $stmt->bind_param("i", $companyid);
+        $stmt->execute();
+        $resultrecordownler = $stmt->get_result();
+
         while($rowrecordowner = $resultrecordownler->fetch_assoc()) {
             $recordownerid = $rowrecordowner["recordOwnerID"]; 
         }

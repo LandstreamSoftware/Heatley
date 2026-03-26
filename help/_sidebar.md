@@ -3,3 +3,5 @@
 - **User**
   - [Connecting to Xero](connecting-to-xero.md)
   - [Terms of Use](terms_of_use.md)
+- **Developer**
+  - [Reduce SQL Injection Risk](reduce-sql-injection-risk-instructions.md)

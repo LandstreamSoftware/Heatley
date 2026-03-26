@@ -7,8 +7,16 @@ $date = $dateNow->format('Y-m-d\TH:i:s');
 
 $accountid = $_SESSION['account_id'];
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$sqlAccess = "SELECT *
+    FROM accesscontrol
+    WHERE accountID = ?";
+$stmt = $con->prepare($sqlAccess);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -50,9 +58,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" ) {
     $recordownerid = $_POST["recordownerid"];
 
 //prepare and bind
-$sql3 = "UPDATE bankaccounts SET recordOwnerID = '$recordownerid' WHERE _id = '$_id'";
+    $sql3 = "UPDATE bankaccounts
+            SET recordOwnerID = ?
+            WHERE _id = ?";
 
-if ($con->query($sql3) === TRUE) {
+    $stmt = $con->prepare($sql3);
+
+    if (!$stmt) {
+        die("Prepare failed: " . $con->error);
+    }
+
+    $stmt->bind_param(
+        "is",
+        $recordownerid,
+        $_id
+    );
+
+    if ($stmt->execute()) {
+        // success
     echo '<div class="row">
         <div class=\"col-sm-6\">Bank account assigned successfully!</div>
     </div>';

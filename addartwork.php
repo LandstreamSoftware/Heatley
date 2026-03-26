@@ -5,10 +5,17 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
+
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -18,8 +25,15 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-$sqluser = "SELECT * FROM accounts WHERE id = $accountid";
-$resultuser = $con->query($sqluser);
+$sqluser = "SELECT * FROM accounts WHERE id = ?";
+$stmt = $con->prepare($sqluser);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+
+$resultuser = $stmt->get_result();
 
 while($rowuser = $resultuser->fetch_assoc()) {
     $mycompanyid = $rowuser["companyID"]; 

@@ -47,13 +47,7 @@ define('smtp_secure','tls');
 //Root URL
 define('root_url','localhost');
 /* Dev */
-define('dev_base_url','192.168.17.193/');
-//Google Cloud Buckets (Dev)
-define('gcloud_bucket_leases','x-lease-manager-leases');
-define('gcloud_bucket_compliance_reports','x-lease-manager-compliance-reports');
-define('gcloud_bucket_inspection_media','x-lease-manager-inspection-media');
-//Google Cloud Credentials json file
-define('Google_Application_Creadentials_file', 'C:/GoogleCloud/analog-arbor-455201-d5-361853bd2c49.json');
+define('dev_base_url','192.168.1.127/');
 
 define('LOG_FILE_PATH', '__DIR__ . /cronlogfile.txt');
 define('XERO_LOG_FILE_PATH', '__DIR__ . /xerologfile.txt');

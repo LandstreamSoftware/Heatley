@@ -25,12 +25,24 @@ $stmt->close();
 
 // Get the access account list
 $accesslist = array();
-$accountid = $_SESSION['account_id'];
-$sql2 ="SELECT companyid, companyname FROM accesscontrol_view WHERE accountid = $accountid ORDER BY companyname";
-//$stmt->bind_param('i', $_SESSION['account_id']);
-//$stmt->execute();
-//$stmt->bind_result($accesslist);
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
+
+$sql2 = "SELECT companyid, companyname
+    FROM accesscontrol_view
+    WHERE accountid = ?
+    ORDER BY companyname";
+$stmt = $con->prepare($sql2);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
 $result2 = $con->query($sql2);
+
 while($row2 = $result2->fetch_assoc()) {
     $accesslist[] = $row2["companyname"]; 
 }
@@ -137,8 +149,16 @@ if (isset($_POST['firstname'], $_POST['lastname'], $_POST['username'], $_POST['n
 
 	
 	<?php
-	$sql3 ="SELECT * FROM xero_oauth_tokens WHERE companyID = $companyid";
-	$result3 = $con->query($sql3);
+	$sql3 = "SELECT *
+        FROM xero_oauth_tokens
+        WHERE companyID = ?";
+	$stmt = $con->prepare($sql3);
+	if (!$stmt) {
+		die("Prepare failed: " . $con->error);
+	}
+	$stmt->bind_param("i", $companyid);
+	$stmt->execute();
+	$result3 = $stmt->get_result();
 
 	if ($result3->num_rows > 0) {
 		//Button to edit/save the Xero Authentication Credentials - will only be visible if the user role is a User with Xero

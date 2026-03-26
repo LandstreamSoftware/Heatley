@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -41,14 +47,33 @@ $Q = explode("/", $_SERVER['QUERY_STRING']);
 parse_str($Q[0],$QueryParameters);
 $QPcompanyid = $QueryParameters['companyid'];
 
-$sql = "SELECT * from companies WHERE idcompany = $QPcompanyid and recordOwnerID IN ($accessto)";
-$result = $con->query($sql);
+$sql = "SELECT *
+        FROM companies
+        WHERE idcompany = ?
+          AND recordOwnerID IN ($accessto)";
+$stmt = $con->prepare($sql);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPcompanyid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $sql1 = "SELECT * from companytype ORDER BY companyType";
 $result1 = $con->query($sql1);
 
-$sql3 = "SELECT * from contacts WHERE companyID = $QPcompanyid and recordOwnerID IN ($accessto)";
+$sql3 = "SELECT *
+         FROM contacts
+         WHERE companyID = ?
+         AND recordOwnerID IN ($accessto)";
+$stmt = $con->prepare($sql3);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPcompanyid);
+$stmt->execute();
 $result3 = $con->query($sql3);
+
 //Get the list of lawyers
 $sql4 = "SELECT * from companies WHERE companyTypeID = 3 and recordOwnerID IN ($accessto)";
 $result4 = $con->query($sql4);
@@ -187,9 +212,41 @@ function test_input($data) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" and $companynameErr == NULL and $address1Err == NULL and $suburbErr == NULL and $cityErr == NULL and $postcodeErr == NULL and $companytypeidErr == NULL and $primarycontactidErr == NULL and $logoimagefilenameErr == NULL and $nzbnErr == NULL and $gstnumberErr == NULL and $bankaccountnumberErr == NULL) {
 
     //prepare and bind
-$sql2 = "UPDATE companies SET companyName = '$companyname', address1 = '$address1', address2 = '$address2', addressSuburb = '$suburb', addressCity = '$city', addressPostCode = '$postcode', companyTypeID = '$companytypeid', primaryContactID = '$primarycontactid', logoImageFileName = '$logoimagefilename', NZBN = '$nzbn', gstNumber = '$gstnumber', bankAccountNumber = '$bankaccountnumber' WHERE idcompany=$QPcompanyid";
+    $sql2 = "UPDATE companies
+            SET companyName = ?,
+                address1 = ?,
+                address2 = ?,
+                addressSuburb = ?,
+                addressCity = ?,
+                addressPostCode = ?,
+                companyTypeID = ?,
+                primaryContactID = ?,
+                logoImageFileName = ?,
+                NZBN = ?,
+                gstNumber = ?,
+                bankAccountNumber = ?
+            WHERE idcompany = ?";
 
-    if ($con->query($sql2) === TRUE) {
+    $stmt = $con->prepare($sql2);
+    $stmt->bind_param(
+        "ssssssiissssi",
+        $companyname,
+        $address1,
+        $address2,
+        $suburb,
+        $city,
+        $postcode,
+        $companytypeid,
+        $primarycontactid,
+        $logoimagefilename,
+        $nzbn,
+        $gstnumber,
+        $bankaccountnumber,
+        $QPcompanyid
+    );
+
+    if ($stmt->execute()) {
+        // success
         echo '<table class="table table-hover">
         <tbody>
             <tr class="success">

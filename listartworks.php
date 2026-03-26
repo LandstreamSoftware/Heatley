@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -30,9 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!preg_match("/^[a-zA-Z-0-9āēīōūĀĒĪŌŪ' .-\/]*$/", $searchstring)) {
         $searchstringErr = "Prohibited characters used in search sting";
         $searchstring = "";
-    } //else {
-    //  $searchstring = "%".$searchstring."%";
-    //}
+    }
   }
 }
 
@@ -42,6 +46,9 @@ if (!empty($QueryParameters['order'])) {
   $QPorder = $QueryParameters['order'];
 } else {
   $QPorder = "title";
+}
+if (!empty($QueryParameters['searchstring'])) {
+  $searchstring = $QueryParameters['searchstring'];
 }
 
 function test_input($data) {
@@ -71,7 +78,7 @@ function test_input($data) {
 <div class="row">
 <div class="col-sm-6" style="text-align:right; padding-top:5px;"><span class="error"><span class="text-danger"><?php echo $searchstringErr;?></span></div>
   <div class="col-sm-6" style="text-align:right;">
-    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" style="display:flex;">
+    <form method="get" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>?searchstring=<?php echo $searchstring?>" style="display:flex;">
       <input class="form-control" id="searchstring" type="text" name="searchstring" value="<?php echo $searchstring;?>" placeholder="Search in Artist Name, Location or Title" style="border-radius:3px 0px 0px 3px;">
       <button class="btn btn-primary" style="border-radius:0px;" type="submit">GO</button>
     </form>
@@ -92,45 +99,45 @@ $(document).ready(function(){
 
 
 
-<table class="table table-striped">
+<table class="table table-striped align-middle">
   <thead>
     <tr>
       <th>Image</th>
       <?php 
       if ($QPorder == "title") {
         ?>
-        <th><a class="text-reset" href="?order=title DESC">Title</a></th>
+        <th><a class="text-reset" href="?&searchstring=<?php echo $searchstring?>&order=title DESC">Title</a></th>
         <?php
       } else {
         ?>
-        <th><a class="text-reset" href="?order=title">Title</a></th>
+        <th><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=title">Title</a></th>
         <?php
       }
       if ($QPorder == "artist") {
         ?>
-        <th><a class="text-reset" href="?order=artist DESC">Artist</a></th>
+        <th><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=artist DESC">Artist</a></th>
         <?php
       } else {
         ?>
-        <th><a class="text-reset" href="?order=artist">Artist</a></th>
+        <th><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=artist">Artist</a></th>
         <?php
       }
       if ($QPorder == "location") {
         ?>
-        <th style="text-align:center;"><a class="text-reset" href="?order=location DESC">Location</a></th>
+        <th style="text-align:center;"><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=location DESC">Location</a></th>
         <?php
       } else {
         ?>
-        <th style="text-align:center;"><a class="text-reset" href="?order=location">Location</a></th>
+        <th style="text-align:center;"><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=location">Location</a></th>
         <?php
       }
       if ($QPorder == "provenance") {
         ?>
-        <th style="text-align:center;"><a class="text-reset" href="?order=provenance DESC">Provenance</a></th>
+        <th style="text-align:center;"><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=provenance DESC">Provenance</a></th>
         <?php
       } else {
         ?>
-        <th style="text-align:center;"><a class="text-reset" href="?order=provenance">Provenance</a></th>
+        <th style="text-align:center;"><a class="text-reset" href="?searchstring=<?php echo $searchstring?>&order=provenance">Provenance</a></th>
         <?php
       }
       ?>
@@ -172,8 +179,9 @@ if ($result->num_rows > 0) {
     <td style=\"text-align:center;\">" . $row["location"] . "</td>
     <td style=\"text-align:center;\">";
     if ($row["provenance"]) {
-      echo "<a href=\"" . $row["provenance"] . "\">provenance</a>";
+      echo "<a href=\"" . $row["provenance"] . "\"><img src=\"img/pdf_logo.png\" height=\"30px\"></a>";
     }
+    
     echo "</td>";
   echo "</tr>";
   }
@@ -201,7 +209,7 @@ echo
     if ($page == $x) {
       echo '<a class="active">' . $x . '</a>';
     } else {
-      echo '<a href="?page=' . ($x) . '&order=' . $QPorder .'">' . ($x) . '</a>';
+      echo '<a href="?page=' . ($x) . '&order=' . $QPorder . '&searchstring=' . $searchstring .'">' . ($x) . '</a>';
     }
   }
   echo "</div>

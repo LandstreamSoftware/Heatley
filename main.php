@@ -495,8 +495,17 @@ function send_renewal_notification_email($recipientemail, $renewalid, $tenantnam
 // Check if Xero token has expired and refresh it if it has expired
 function check_xero_token_expiry($con, $companyid)
 {
-	$sql2 = "SELECT * FROM xero_oauth_tokens WHERE companyID = $companyid";
-	$result2 = $con->query($sql2);
+	$sql2 = "SELECT *
+        FROM xero_oauth_tokens
+        WHERE companyID = ?";
+	$stmt = $con->prepare($sql2);
+	if (!$stmt) {
+		die("Prepare failed: " . $con->error);
+	}
+	$stmt->bind_param("i", $companyid);
+	$stmt->execute();
+	$result2 = $stmt->get_result();
+
 	if ($result2->num_rows > 0) {
 		while($row2 = $result2->fetch_assoc()) {
 		$accesstoken = $row2["access_token"];
@@ -543,9 +552,31 @@ function check_xero_token_expiry($con, $companyid)
 		$expiresAt = (new DateTimeImmutable())->setTimestamp($newToken->getExpires())->format('Y-m-d H:i:s');
 
 		//Update the database with the new token, refresh token and expiry
-		$sqlupd = "UPDATE xero_oauth_tokens SET access_token_expires_at = '$expiresAt', access_token = '$accesstoken', refresh_token = '$refreshtoken', token_version = '$newtokenversion' WHERE companyID = $companyid";
+		$sqlupd = "UPDATE xero_oauth_tokens
+           SET access_token_expires_at = ?,
+               access_token = ?,
+               refresh_token = ?,
+               token_version = ?
+           WHERE companyID = ?";
 
-		if ($con->query($sqlupd) === TRUE) {
+		$stmt = $con->prepare($sqlupd);
+
+		if (!$stmt) {
+			die("Prepare failed: " . $con->error);
+		}
+
+		$stmt->bind_param(
+			"sssii",
+			$expiresAt,
+			$accesstoken,
+			$refreshtoken,
+			$newtokenversion,
+			$companyid
+		);
+
+		if ($stmt->execute()) {
+			// success
+
 		// New token data successfully stored in database.
 		return $accesstoken;
 		}

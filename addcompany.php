@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -18,8 +24,14 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-$sqluser = "SELECT * FROM accounts WHERE id = $accountid";
-$resultuser = $con->query($sqluser);
+$sqluser = "SELECT * FROM accounts WHERE id = ?";
+$stmt = $con->prepare($sqluser);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$resultuser = $stmt->get_result();
 
 while($rowuser = $resultuser->fetch_assoc()) {
     $mycompanyid = $rowuser["companyID"]; 
@@ -169,8 +181,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and $companynameErr == NULL and $addres
         if ($companytypeid == "5") {
             //If the company is type Property Owner, set the recordOwnerID to the idcompany.
             $newcompanyid = $con->insert_id;
-            $sql5 = "UPDATE companies SET companyName = '$companyname', recordOwnerID = '$newcompanyid' WHERE idcompany=$newcompanyid";
-            if ($con->query($sql5) === TRUE) {
+
+            $stmt = $con->prepare("
+                UPDATE companies
+                SET companyName = ?, recordOwnerID = ?
+                WHERE idcompany = ?
+            ");
+
+            $stmt->bind_param("sii", $companyname, $newcompanyid, $newcompanyid);
+
+            if ($stmt->execute()) {
+                // success
+
                 //Add the new Property Owner company to the Admin access list.
                 $adminaccountid = 1;
                 $stmt1 = $con->prepare("INSERT INTO accesscontrol (accountID, companyID) VALUES (?, ?)");

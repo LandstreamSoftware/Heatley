@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -45,14 +51,33 @@ $QPcompanyid = $QueryParameters['companyid'];
 <table class="table">
 
 <?php
-$sql = "SELECT * FROM companies_view WHERE idcompany = $QPcompanyid and recordOwnerID IN ($accessto)";
-$result = $con->query($sql);
+$sql = "SELECT *
+    FROM companies_view
+    WHERE idcompany = ?
+    AND recordOwnerID IN ($accessto)";
+$stmt = $con->prepare($sql);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPcompanyid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $sql2 = "SELECT * FROM companytype";
 $result2 = $con->query($sql2);
 
-$sql3 = "SELECT * FROM contacts WHERE companyID = $QPcompanyid and recordOwnerID IN ($accessto) ORDER BY firstName";
-$result3 = $con->query($sql3);
+$sql3 = "SELECT *
+    FROM contacts
+    WHERE companyID = ?
+        AND recordOwnerID IN ($accessto)
+    ORDER BY firstName";
+$stmt = $con->prepare($sql3);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPcompanyid);
+$stmt->execute();
+$result3 = $stmt->get_result();
 
 if ($result->num_rows > 0) {
   // output data of each row
@@ -86,31 +111,8 @@ if ($result->num_rows > 0) {
         </tr>
         <tr>
             <td>Primary Contact:</td><td colspan=\"3\"><a href=\"viewcontact.php?contactid=" . $primarycontactid . "\">" . $row["firstname"] . " ". $row["lastname"] . "</a></td>
-        </tr>";
-
-/*
-        //Get the property manager company
-        if ($row["propertymanagercompanyid"] == 0) {
-            $propertymanagercompanyid = "";
-            $propertymanagercompanyname = "";
-        } else {
-            $propertymanagercompanyid = $row["propertymanagercompanyid"];
-            $sql4 = "SELECT idcompany, companyName FROM companies WHERE idcompany = $propertymanagercompanyid";
-            $result4 = $con->query($sql4);
-            while($row4 = $result4->fetch_assoc()) {
-                $propertymanagercompanyname = $row4["companyName"];
-            }
-        }
-       
-
-        
-    echo "<tr>
-            <td>Property Management Company:</td><td colspan=\"3\">" . $propertymanagercompanyname . "</td>
         </tr>
-*/ 
-
-
-    echo "<tr>
+        <tr>
             <td>NZBN:</td><td colspan=\"3\">" . $row["nzbn"] . "</td>
         </tr>
         <tr>

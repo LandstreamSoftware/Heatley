@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -40,8 +46,16 @@ $Q = explode("/", $_SERVER['QUERY_STRING']);
 parse_str($Q[0],$QueryParameters);
 $QPartworkid = $QueryParameters['id'];
 
-$sql = "SELECT * from artworks WHERE id = $QPartworkid";
-$result = $con->query($sql);
+$sql = "SELECT * 
+        FROM artworks 
+        WHERE id = ?";
+$stmt = $con->prepare($sql);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPartworkid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $sql1 = "SELECT * from locations ORDER BY location";
 $result1 = $con->query($sql1);

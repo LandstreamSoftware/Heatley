@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -41,8 +47,17 @@ $Q = explode("/", $_SERVER['QUERY_STRING']);
 parse_str($Q[0],$QueryParameters);
 $QPcontactid = $QueryParameters['contactid'];
 
-$sql = "SELECT * from contacts WHERE idcontacts = $QPcontactid and recordOwnerID IN ($accessto)";
-$result = $con->query($sql);
+$sql = "SELECT *
+        FROM contacts
+        WHERE idcontacts = ?
+        AND recordOwnerID IN ($accessto)";
+$stmt = $con->prepare($sql);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $QPcontactid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $sql1 = "SELECT * from companies WHERE recordOwnerID IN ($accessto) ORDER BY companyName";
 $result1 = $con->query($sql1);
@@ -148,9 +163,33 @@ function test_input($data) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" and $firstnameErr == NULL and $middlenameErr == NULL and $lastnameErr == NULL and $emailaddressErr == NULL and $mobilenumberErr == NULL and $phonenumberErr == NULL and $companyidErr == NULL and $titleErr == NULL) {
 
     //prepare and bind
-$sql2 = "UPDATE contacts SET firstName = '$firstname', middleName = '$middlename', lastName = '$lastname', emailAddress = '$emailaddress', mobileNumber = '$mobilenumber', phoneNumber = '$phonenumber', companyID = '$companyid', title = '$title' WHERE idcontacts = $QPcontactid";
+    $sql2 = "UPDATE contacts 
+        SET firstName = ?, 
+            middleName = ?, 
+            lastName = ?, 
+            emailAddress = ?, 
+            mobileNumber = ?, 
+            phoneNumber = ?, 
+            companyID = ?, 
+            title = ?
+        WHERE idcontacts = ?";
 
-    if ($con->query($sql2) === TRUE) {
+    $stmt = $con->prepare($sql2);
+    $stmt->bind_param(
+        "ssssssisi",
+        $firstname,
+        $middlename,
+        $lastname,
+        $emailaddress,
+        $mobilenumber,
+        $phonenumber,
+        $companyid,
+        $title,
+        $QPcontactid
+    );
+
+    if ($stmt->execute()) {
+        // success
 
         if ($isprimarycontact == 1) {
             //Update the company record with the primary contact

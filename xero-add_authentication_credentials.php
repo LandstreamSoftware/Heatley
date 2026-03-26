@@ -5,10 +5,16 @@ include 'main.php';
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'];
+$accountid = $_SESSION['account_id'] ?? null;
+if (!is_int($accountid) && !ctype_digit($accountid)) {
+    exit('Invalid account ID');
+}
+$accountid = (int)$accountid;
 
-$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
-$resultAccess = $con->query($sqlAccess);
+$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
+$stmt->bind_param("i", $accountid); // "i" = integer
+$stmt->execute();
+$resultAccess = $stmt->get_result();
 
 $accessto = -1;
 
@@ -18,8 +24,16 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-$sql9 = "SELECT * FROM accounts WHERE id = $accountid";
-$result9 = $con->query($sql9);
+$sql9 = "SELECT *
+    FROM accounts
+    WHERE id = ?";
+$stmt = $con->prepare($sql9);
+if (!$stmt) {
+    die("Prepare failed: " . $con->error);
+}
+$stmt->bind_param("i", $accountid);
+$stmt->execute();
+$result9 = $stmt->get_result();
 
 while ($row9 = $result9->fetch_assoc()) {
     $recordownerid = $row9["companyID"];
@@ -55,8 +69,17 @@ while ($row9 = $result9->fetch_assoc()) {
     $scopesErr = $clientidErr = $clientsecretErr = $redirecturiErr = "";
     $tokenexpiresat = date('Y-m-d H:i:s');
 
-    $sql1 = "SELECT * FROM xero_oauth_tokens  where companyID = 5 and recordOwnerID = $recordownerid";
-    $result1 = $con->query($sql1);
+    $sql1 = "SELECT *
+        FROM xero_oauth_tokens
+        WHERE companyID = 5
+         AND recordOwnerID = ?";
+    $stmt = $con->prepare($sql1);
+    if (!$stmt) {
+        die("Prepare failed: " . $con->error);
+    }
+    $stmt->bind_param("i", $recordownerid);
+    $stmt->execute();
+    $result1 = $stmt->get_result();
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($_POST["clientid"])) {
