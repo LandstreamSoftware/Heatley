@@ -41,7 +41,7 @@ if (!$stmt) {
 }
 $stmt->bind_param("i", $accountid);
 $stmt->execute();
-$result2 = $con->query($sql2);
+$result2 = $stmt->get_result();
 
 while($row2 = $result2->fetch_assoc()) {
     $accesslist[] = $row2["companyname"]; 
@@ -196,7 +196,7 @@ if (isset($_POST['firstname'], $_POST['lastname'], $_POST['username'], $_POST['n
 	</div>
 	<div class="row">
 		<div class="col-sm-2" style="padding-top:20px;"><a class="btn btn-primary" href="?action=edit" style="width:200px; margin:20px;">Edit Details</a></div>
-		<div class="col-sm-2" style="padding-top:20px;"><a href="setupwizard.php" class="btn btn-primary" style="width:200px; margin:20px;">Setup Wizard</a></div>
+	<!--	<div class="col-sm-2" style="padding-top:20px;"><a href="setupwizard.php" class="btn btn-primary" style="width:200px; margin:20px;">Setup Wizard</a></div> -->
 	</div>
 
 <?php elseif ($_GET['action'] == 'edit'): ?>

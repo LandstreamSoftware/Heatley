@@ -72,7 +72,7 @@ if (!$stmt) {
 }
 $stmt->bind_param("i", $QPcompanyid);
 $stmt->execute();
-$result3 = $con->query($sql3);
+$result3 = $stmt->get_result();
 
 //Get the list of lawyers
 $sql4 = "SELECT * from companies WHERE companyTypeID = 3 and recordOwnerID IN ($accessto)";

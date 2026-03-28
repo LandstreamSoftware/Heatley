@@ -50,11 +50,13 @@ define('root_url','localhost');
 define('dev_base_url','192.168.1.127/');
 
 define('LOG_FILE_PATH', '__DIR__ . /cronlogfile.txt');
-define('XERO_LOG_FILE_PATH', '__DIR__ . /xerologfile.txt');
+define('XERO_LOG_FILE_PATH', __DIR__ . '/xerologfile.txt');
 
 define('public_key_path', '__DIR__ . /public_key.pem');
 
 define('public_key_compatible_path', '__DIR__ . /public_key.pem');
 
-define('xero_redirect_uri', 'http://x.craigheatley.nz/xero-php-oauth2-app/callback.php');
+define('xero_redirect_uri', 'http://localhost/xero-php-oauth2-app/callback.php');
+/* Endcryption key for Xero encrypting the client secret */
+define('APP_SECRET_KEY', '5q4q6mTw7D+PDsEq8FU/l+x5TMePkVWsGdbnzxobYiE=');
 ?>

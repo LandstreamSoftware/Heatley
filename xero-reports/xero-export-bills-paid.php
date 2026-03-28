@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require '../vendor/autoload.php';
+include '../encryption_helper.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;

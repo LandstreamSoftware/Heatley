@@ -1,26 +1,15 @@
 <?php
 // Include the main.php file
 include 'main.php';
+include 'encryption_helper.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'] ?? null;
-if (!is_int($accountid) && !ctype_digit($accountid)) {
-    exit('Invalid account ID');
-}
-$accountid = (int)$accountid;
+$accountid = $_SESSION['account_id'];
 
-$sqlAccess = "SELECT *
-    FROM accesscontrol
-    WHERE accountID = ?";
-$stmt = $con->prepare($sqlAccess);
-if (!$stmt) {
-    die("Prepare failed: " . $con->error);
-}
-$stmt->bind_param("i", $accountid);
-$stmt->execute();
-$resultAccess = $stmt->get_result();
+$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
+$resultAccess = $con->query($sqlAccess);
 
 $accessto = -1;
 
@@ -29,68 +18,6 @@ if ($resultAccess->num_rows > 0) {
        $accessto .= "," . $rowAccess["companyID"]; 
     }
 }
-
-require 'vendor/autoload.php';
-
-$sql1 = "SELECT * 
-         FROM accounts 
-         WHERE id = ?";
-$stmt = $con->prepare($sql1);
-if (!$stmt) {
-    die("Prepare failed: " . $con->error);
-}
-$stmt->bind_param("i", $accountid);
-$stmt->execute();
-$result1 = $stmt->get_result();
-
-if ($result1->num_rows > 0) {
-    while($row1 = $result1->fetch_assoc()) {
-       $companyid = $row1["companyID"]; 
-    }
-}
-
-
-$myNewToken = check_xero_token_expiry($con, $companyid);
-
-if (isset($myNewToken)) {
-    $accesstoken = $myNewToken;
-}
-
-$config = XeroAPI\XeroPHP\Configuration::getDefaultConfiguration()->setAccessToken($accesstoken);
-
-// Initialize Identity API
-$identityApi = new XeroAPI\XeroPHP\Api\IdentityApi(
-    new GuzzleHttp\Client(),
-    $config // Your standard configuration with the access token
-);
-
-// Get all connections
-$connections = $identityApi->getConnections();
-
-
-$apiInstance = new XeroAPI\XeroPHP\Api\AccountingApi(
-    new GuzzleHttp\Client(),
-    $config
-);
-
-use XeroAPI\XeroPHP\Models\Accounting\Invoice;
-
-
-$ifModifiedSince = null; //new DateTime("2020-02-06T12:17:43.202-08:00");
-$today = date('d M Y');
-$where = null;
-$order = 'Name';
-$iDs = null; //array("00000000-0000-0000-0000-000000000000");
-$invoiceNumbers = null; //array("INV-001", "INV-002");
-$contactIDs = null; //array("00000000-0000-0000-0000-000000000000");
-$statuses = array("ACTIVE"); //array("AUTHORISED");
-$page = 1;
-$includeArchived = null; //true;
-$createdByMyApp = null; //false;
-$unitdp = null; //4;
-$summaryOnly = false;
-$pageSize = 100;
-$searchTerm = null; //"SearchTerm=REF12";
 
 ?>
 
@@ -121,16 +48,9 @@ $Q = explode("/", $_SERVER['QUERY_STRING']);
 parse_str($Q[0],$QueryParameters);
 $companyid = $QueryParameters['cid'];
 
-$sql = "SELECT *
-    FROM xero_oauth_tokens
-    WHERE companyID = ?";
-$stmt = $con->prepare($sql);
-if (!$stmt) {
-    die("Prepare failed: " . $con->error);
-}
-$stmt->bind_param("i", $companyid);
-$stmt->execute();
-$result = $stmt->get_result();
+
+$sql = "SELECT * from xero_oauth_tokens WHERE companyID = $companyid";
+$result = $con->query($sql);
 
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
@@ -141,11 +61,11 @@ if ($result->num_rows > 0) {
         $scopes = $row["scopes"];
         $tokenversion = $row["token_version"];
         $clientid = $row["client_id"];
-        $clientsecret = $row["client_secret"];
+        $clientsecret = decryptValue($row["client_secret"]);
         $redirecturi = $row["redirect_uri"];
     } 
 } else {
-    $tenantid = $tokenexpiresat = $accesstoken = $refreshtoken = $scopes = $tokenversion = $clientid = $clientsecret = "";
+    $tenantid = $tokenexpiresat = $accesstoken = $refreshtoken = $scopes = $tokenversion = $clientid = $clientsecret = $xeroclientsecretenc = "";
 }
 
 $showAlert = null;
@@ -178,6 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['manual_refresh_token'
         if (!preg_match("/^[a-zA-Z-_0-9āēīōūĀĒĪŌŪ' ]*$/", $clientsecret)) {
             $clientsecretErr = "Only letters, underscore, dash and spaces allowed";
         }
+        $xeroclientsecretenc = encryptValue($clientsecret);
     }
 
     if (empty($_POST["scopes"])) {
@@ -247,23 +168,22 @@ function test_input($data) {
 if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token']) and $tenantidErr == NULL and $tokenexpiresatErr == NULL and $accesstokenErr == NULL and $refreshtokenErr == NULL and $scopesErr == NULL and $tokenversionErr == NULL and $clientidErr == NULL and $clientsecretErr == NULL and $redirecturiErr == NULL) {
 
     //prepare and bind
-    $sql2 = "UPDATE xero_oauth_tokens
-            SET tenant_id = ?,
-                access_token_expires_at = ?,
-                access_token = ?,
-                refresh_token = ?,
-                scopes = ?,
-                token_version = ?,
-                client_id = ?,
-                client_secret = ?,
-                redirect_uri = ?
-            WHERE companyID = ?";
+    $sql = "
+    UPDATE xero_oauth_tokens
+    SET
+        tenant_id = ?,
+        access_token_expires_at = ?,
+        access_token = ?,
+        refresh_token = ?,
+        scopes = ?,
+        token_version = ?,
+        client_id = ?,
+        client_secret = ?,
+        redirect_uri = ?
+        WHERE companyID = ?
+    ";
 
-    $stmt = $con->prepare($sql2);
-
-    if (!$stmt) {
-        die("Prepare failed: " . $con->error);
-    }
+    $stmt = $con->prepare($sql);
 
     $stmt->bind_param(
         "sssssssssi",
@@ -274,13 +194,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
         $scopes,
         $tokenversion,
         $clientid,
-        $clientsecret,
+        $xeroclientsecretenc,
         $redirecturi,
         $companyid
     );
 
     if ($stmt->execute()) {
-        // success
 
         echo '<table class="table table-hover">
         <tbody>
@@ -302,18 +221,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
     if ($result->num_rows == 0) {
 
         ?>
-
-
-            <div class="row">
-                <p>Click on the button below to log into your Xero account and create the necessary Authentication Credetials.</p>
-                
-            </div>
-            <div class="col-sm-1" style="padding:40px;">
-                <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $companyid; ?>"><img src="../img/connect-white.svg"></a>
-            </div>
-
-
+        <table class="table table-hover">
+            <tbody>
+                <tr class="success">
+                    <td>No authentication records found for your organisation.</td>
+                </tr>
+            </tbody>
+        </table>
         <div class="row">
+            <div class="col-sm-2"><a href="profile.php" class="btn btn-primary">Back to Profile</a></div>
+        <div class="row">
+        </div>
         <?php
     } else {
         $expiredAt_date = date_create($tokenexpiresat);
@@ -329,71 +247,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
 
         <form class="form form-medium" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"].'?cid='.$companyid);?>">
             <div class="form-group">
-            <label class="form-label col-sm-4" for="clientid">Client ID: <span class="text-danger">*</span></label>
-            <div class="col-sm-10"><input class="form-control" id="clientid" type="text" name="clientid" value="<?php echo $clientid;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientidErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="clientsecret">Client Secret: <span class="text-danger">*</span></label>
-            <div class="col-sm-10"><input class="form-control" id="clientsecret" type="text" name="clientsecret" value="<?php echo $clientsecret;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientsecretErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="tenantid">Tenant ID: <br><span class="text-body-tertiary">(automatically generated)</span></label>
-            <div class="col-sm-10"><input class="form-control" id="tenantid" type="text" name="tenantid" value="<?php echo $tenantid;?>"></div>
-            <?php
-            if ($tenantid == 0 || $tenantid == null) {
-                ?><div class="col-sm-2"><span class="error"><span class="text-danger">NO TENANT ID: Open a new incognito window and repeat the authentication again</span></div><?php
-            } else {
-                ?><div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tenantidErr;?></span></div><?php
-            }
-            ?>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="scopes">Scopes: <span class="text-danger">*</span></label>
-            <div class="col-sm-10"><input class="form-control" id="scopes" type="text" name="scopes" value="<?php echo $scopes;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $scopesErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="tokenversion">Token Version: <br><span class="text-body-tertiary">(automatically generated)</span></label>
-            <div class="col-sm-3"><input class="form-control" id="tokenversion" type="text" name="tokenversion" value="<?php echo $tokenversion;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tokenversionErr;?></span></div>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="accesstoken">Access Token:<br><span class="text-body-tertiary">(automatically generated)</span></label>
-            <div class="col-sm-10"><textarea class="form-control" id="accesstoken" name="accesstoken" rows="15"><?php echo $accesstoken;?></textarea></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $accesstokenErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="refreshtoken">Refresh Token:<br><span class="text-body-tertiary">(automatically generated)</span></label>
-            <div class="col-sm-10"><input class="form-control" id="refreshtoken" type="text" name="refreshtoken" value="<?php echo $refreshtoken;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $refreshtokenErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="tokenexpiresat">Token expires at:<br><span class="text-body-tertiary">(<?php echo $time_till_expire;?>)</span></label>
-            <div class="col-sm-6"><input class="form-control" id="tokenexpiresat" type="text" name="tokenexpiresat" value="<?php echo $tokenexpiresat;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tokenexpiresatErr;?></span></div>
-        </div>
-        <div class="form-group">
-            <label class="form-label col-sm-4" for="redirecturi">Redirect URI: <span class="text-danger">*</span></label>
-            <div class="col-sm-10"><input class="form-control" id="redirecturi" type="text" name="redirecturi" value="<?php echo $redirecturi;?>"></div>
-            <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $redirecturiErr;?></span></div>
-        </div>
-        
-        <div class="form-group">
-            <div class="col-sm-3" style="padding-top:40px;"><input type="submit" value="Save" class="btn btn-primary" style="width:100px"></div>
-            <div class="col-sm-2" style="padding-top:40px;"><a href="profile.php" class="btn btn-primary">Cancel</a></div>
-        </div>
+                <label class="form-label col-sm-4" for="clientid">Client ID: <span class="text-danger">*</span></label>
+                <div class="col-sm-10"><input class="form-control" id="clientid" type="text" name="clientid" value="<?php echo $clientid;?>"></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientidErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="clientsecret">Client Secret: <span class="text-danger">*</span></label>
+                <div class="col-sm-10"><input class="form-control" id="clientsecret" type="text" name="clientsecret" placeholder="Enter your Client Secret" value=""></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientsecretErr;?></span></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="tenantid">Tenant ID: <br><span class="text-body-tertiary">(automatically generated)</span></label>
+                <div class="col-sm-10"><input class="form-control" id="tenantid" type="text" name="tenantid" value="<?php echo $tenantid;?>" readonly></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tenantidErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="scopes">Scopes: <span class="text-danger">*</span></label>
+                <div class="col-sm-10"><input class="form-control" id="scopes" type="text" name="scopes" value="<?php echo $scopes;?>"></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $scopesErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="tokenversion">Token Version: <br><span class="text-body-tertiary">(automatically generated)</span></label>
+                <div class="col-sm-3"><input class="form-control" id="tokenversion" type="text" name="tokenversion" value="<?php echo $tokenversion;?>" readonly></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tokenversionErr;?></span></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="accesstoken">Access Token:<br><span class="text-body-tertiary">(automatically generated)</span></label>
+                <div class="col-sm-10"><textarea class="form-control" id="accesstoken" name="accesstoken" rows="15" readonly><?php echo $accesstoken;?></textarea></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $accesstokenErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="refreshtoken">Refresh Token:<br><span class="text-body-tertiary">(automatically generated)</span></label>
+                <div class="col-sm-10"><input class="form-control" id="refreshtoken" type="text" name="refreshtoken" value="<?php echo $refreshtoken;?>" readonly></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $refreshtokenErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="tokenexpiresat">Token expires at:<br><span class="text-body-tertiary">(<?php echo $time_till_expire;?>)</span></label>
+                <div class="col-sm-6"><input class="form-control" id="tokenexpiresat" type="text" name="tokenexpiresat" value="<?php echo $tokenexpiresat;?>"></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $tokenexpiresatErr;?></span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label col-sm-4" for="redirecturi">Redirect URI: <span class="text-danger">*</span></label>
+                <div class="col-sm-10"><input class="form-control" id="redirecturi" type="text" name="redirecturi" value="<?php echo $redirecturi;?>" readonly></div>
+                <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $redirecturiErr;?></span></div>
+            </div>
+            
+            <div class="form-group">
+                <div class="col-sm-3" style="padding-top:40px;"><input type="submit" value="Save" class="btn btn-primary" style="width:100px"></div>
+                <div class="col-sm-2" style="padding-top:40px;"><a href="profile.php" class="btn btn-primary">Cancel</a></div>
+            </div>
         </form>
-
-        
-
-
-
-
-
-
 
         <div class="row">
             <div class="col-sm-10" style="text-align:right;">
@@ -407,58 +312,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
                 <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $companyid; ?>"><img src="../img/connect-white.svg"></a>
             </div>
         </div>
-
-
-
-<div class="row">
-            <div class="col-sm-5">
-                <h3>Xero Tracking Categories</h3>
-            </div>
-        </div>
-
-<?php
-foreach ($connections as $connection) {
-    try {
-        $xeroTenantId = $connection->getTenantId();
-        $xeroTenantName = $connection->getTenantName();
-        ?>
-        
-        <div class="row">
-            <div class="col-sm-5">
-            <h4 style="padding:15px 0 15px 0;"><?=$xeroTenantName?></h4>
-            </div> 
-        </div>
-        <?php
-        $result = $apiInstance->getTrackingCategories($xeroTenantId, $ifModifiedSince, $where, $order, $iDs, $invoiceNumbers, $contactIDs, $statuses, $page, $includeArchived, $createdByMyApp, $unitdp, $summaryOnly, $pageSize, $searchTerm);
-
-        $trackingCategories = $result->getTrackingCategories();
-        
-        foreach ($trackingCategories as $cat) {
-            echo "<div class=\"row\">
-                <div class=\"col-sm-3\"><a href= \"https://go.xero.com/Setup/Tracking.aspx\">" . $cat->getName() . "</a></div>        
-                <div class=\"col-sm-2\">" . $cat->getStatus() . "</div>
-             </div>";
-
-            $trackingOptions = $cat->getOptions();
-
-            foreach ($trackingOptions as $option) {
-                echo "<div class=\"row\">
-                <div class=\"col-sm-1\"></div>
-                <div class=\"col-sm-2\">" . $option->getName() . "</div>    
-                <div class=\"col-sm-2\">" . $option->getStatus() . "</div>
-                </div>";
-            }
-        }
-
-
-    } catch (Exception $e) {
-    echo 'Exception when calling AccountingApi->getInvoices: ', $e->getMessage(), PHP_EOL;
-    }
-
-}
-?>
-
-
     
         <div class="row">
         <?php

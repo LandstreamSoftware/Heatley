@@ -3,6 +3,7 @@ ini_set('display_errors', 'On');
 require '../vendor/autoload.php';
 include '../main.php';
 require_once('../xero-php-oauth2-app/storage.php');
+include '../encryption_helper.php';
 
 
 // Storage Classe uses sessions for storing token > extend to your DB of choice
@@ -24,7 +25,7 @@ $result = $con->query($sql);
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
       $clientid = $row["client_id"];
-      $clientsecret = $row["client_secret"];
+      $clientsecret = decryptValue($row["client_secret"]);
       $redirecturi  = $row["redirect_uri"];
       $scopes = $row["scopes"];
       $tokenversion = $row["token_version"];

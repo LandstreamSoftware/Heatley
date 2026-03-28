@@ -513,7 +513,7 @@ function check_xero_token_expiry($con, $companyid)
 		$tenantid = $row2["tenant_id"];
 		$refreshtoken = $row2["refresh_token"];
 		$clientid = $row2["client_id"];
-		$clientsecret = $row2["client_secret"];
+		$clientsecret = decryptValue($row2["client_secret"]);
 		$redirecturi = $row2["redirect_uri"];
 		$newtokenversion = $row2["token_version"] + 1;
 		}

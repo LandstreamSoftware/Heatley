@@ -56,6 +56,12 @@ print_r($_SESSION);
 	$inspection_date = date_format($date, 'Y-m-d H:i:s');
 	echo $inspection_date;
 	?>
+</div class="block">
+	Encription Key (randomly generated)<br>
+	<?php
+	echo base64_encode(random_bytes(32)) . PHP_EOL;
+	?>
 
+</div>
 
 <?=template_footer()?>

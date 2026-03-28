@@ -1,24 +1,11 @@
 <?php
-/**
- * authentication.php
- *
- * Xero OAuth2 flow + token persistence to MySQL table `xero_oauth_tokens`.
- *
- * Requires:
- *   composer require league/oauth2-client guzzlehttp/guzzle xeroapi/xero-php-oauth2
- *
- * Notes:
- * - access_token / refresh_token columns are VARBINARY(2048). We store token strings directly.
- * - token_key_version is left at default 1 unless you override.
- */
-
-
 declare(strict_types=1);
 
 ini_set('display_errors', 'On');
 error_reporting(E_ALL);
 
 require '../vendor/autoload.php';
+include '../encryption_helper.php';
 
 use GuzzleHttp\Client as GuzzleClient;
 use League\OAuth2\Client\Provider\GenericProvider;
@@ -39,7 +26,8 @@ $result = $con->query($sql);
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
       $clientid = $row["client_id"];
-      $clientsecret = $row["client_secret"];
+//      $clientsecret = $row["client_secret"];
+      $clientsecret = decryptValue($row["client_secret"]);
       $redirecturi  = $row["redirect_uri"];
       $scopes = $row["scopes"];
       

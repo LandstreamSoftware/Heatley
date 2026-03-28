@@ -1,20 +1,15 @@
 <?php
 // Include the main.php file
 include 'main.php';
+include 'encryption_helper.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
 
-$accountid = $_SESSION['account_id'] ?? null;
-if (!is_int($accountid) && !ctype_digit($accountid)) {
-    exit('Invalid account ID');
-}
-$accountid = (int)$accountid;
+$accountid = $_SESSION['account_id'];
 
-$stmt = $con->prepare("SELECT * FROM accesscontrol WHERE accountID = ?");
-$stmt->bind_param("i", $accountid); // "i" = integer
-$stmt->execute();
-$resultAccess = $stmt->get_result();
+$sqlAccess = "SELECT * FROM accesscontrol WHERE accountID = $accountid";
+$resultAccess = $con->query($sqlAccess);
 
 $accessto = -1;
 
@@ -24,16 +19,8 @@ if ($resultAccess->num_rows > 0) {
     }
 }
 
-$sql9 = "SELECT *
-    FROM accounts
-    WHERE id = ?";
-$stmt = $con->prepare($sql9);
-if (!$stmt) {
-    die("Prepare failed: " . $con->error);
-}
-$stmt->bind_param("i", $accountid);
-$stmt->execute();
-$result9 = $stmt->get_result();
+$sql9 = "SELECT * FROM accounts WHERE id = $accountid";
+$result9 = $con->query($sql9);
 
 while ($row9 = $result9->fetch_assoc()) {
     $recordownerid = $row9["companyID"];
@@ -49,13 +36,8 @@ while ($row9 = $result9->fetch_assoc()) {
         </svg>
     </div>
     <div class="wrap">
-        <h2>Add Xero Authentication Credentials</h2>
+        <h2>Add Xero Authentication Credentials.</h2>
     </div>
-<!-- Help button
-    <div class="ms-auto">
-		<a href="/help/#/connecting-to-xero" target="_blank" class="btn btn-outline-success btn-sm d-inline-flex align-items-center" role="button">Help</a>
-	</div>
--->
 </div>
 
 <div class="block">
@@ -64,22 +46,10 @@ while ($row9 = $result9->fetch_assoc()) {
     // define variables and set to empty values
     //$scopes = "openid profile email offline_access accounting.settings accounting.transactions accounting.contacts accounting.transactions.read accounting.settings.read";
     $scopes = "openid profile email offline_access accounting.contacts.read accounting.transactions.read accounting.settings.read";
-    $clientid = $clientsecret = "";
+    $clientid = $clientsecret = $xeroclientsecretenc = "";
     $redirecturi = xero_redirect_uri;
     $scopesErr = $clientidErr = $clientsecretErr = $redirecturiErr = "";
     $tokenexpiresat = date('Y-m-d H:i:s');
-
-    $sql1 = "SELECT *
-        FROM xero_oauth_tokens
-        WHERE companyID = 5
-         AND recordOwnerID = ?";
-    $stmt = $con->prepare($sql1);
-    if (!$stmt) {
-        die("Prepare failed: " . $con->error);
-    }
-    $stmt->bind_param("i", $recordownerid);
-    $stmt->execute();
-    $result1 = $stmt->get_result();
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($_POST["clientid"])) {
@@ -100,6 +70,7 @@ while ($row9 = $result9->fetch_assoc()) {
             if (!preg_match("/^[a-zA-Z-_0-9āēīōūĀĒĪŌŪ' ]*$/", $clientsecret)) {
                 $clientsecretErr = "Only letters, underscore, dash and spaces allowed";
             }
+            $xeroclientsecretenc = encryptValue($clientsecret);
         }
 
         if (empty($_POST["redirecturi"])) {
@@ -126,48 +97,71 @@ while ($row9 = $result9->fetch_assoc()) {
 
 
     if ($_SERVER["REQUEST_METHOD"] == "POST" and $scopesErr == NULL and $clientidErr == NULL and $clientsecretErr == NULL and $redirecturiErr == NULL) {
+        
+        // Check to see if there is already an existing record
+        $sqlcheck = "SELECT * from xero_oauth_tokens WHERE companyID = $recordownerid";
+        $resultcheck = $con->query($sqlcheck);
 
-        //prepare and bind
-        $stmt = $con->prepare("INSERT INTO xero_oauth_tokens (companyID, scopes, client_id, client_secret, redirect_uri, access_token_expires_at, recordOwnerID) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssssi", $recordownerid, $scopes, $clientid, $clientsecret, $redirecturi, $tokenexpiresat, $recordownerid);
+        if ($resultcheck->num_rows == 0) {
 
-        if ($stmt->execute()) {
-            echo '<div class=\"row\">
-        <table class="table table-hover">
-            <tbody>
-                <tr class="success">
-                    <td>Success!</td>
-                </tr>
-            </tbody>
-        </table>';
-        ?>
-        <div class="row">
-            <div class="col-sm-9">
-                <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $recordownerid; ?>"><img src="../img/connect-white.svg"></a>
-			</div>
-            <div class="col-sm-3">
-                <a href="profile.php" class="btn btn-primary">Back to Profile</a>
+            //prepare and bind
+            $stmt = $con->prepare("INSERT INTO xero_oauth_tokens (companyID, scopes, client_id, client_secret, redirect_uri, access_token_expires_at, recordOwnerID) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssssi", $recordownerid, $scopes, $clientid, $xeroclientsecretenc, $redirecturi, $tokenexpiresat, $recordownerid);
+
+            if ($stmt->execute()) {
+                echo '<div class=\"row\">
+            <table class="table table-hover">
+                <tbody>
+                    <tr class="success">
+                        <td>Success!</td>
+                    </tr>
+                </tbody>
+            </table>';
+            ?>
+            <div class="row">
+                <div class="col-sm-12">
+                    <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $recordownerid; ?>"><img src="../img/connect-white.svg"></a>
+                </div>
             </div>
-        </div>
-        <?php
+            <?php
+            } else {
+            ?>   
+            <div class="row">
+                <div class="col-sm-3">
+                    <?php echo 'Error creating record: ' . $con->error; ?>
+                </div>
+                <div class="col-sm-9">
+                    <a href="profile.php" class="btn btn-primary">Back to Profile</a>
+            </div>
+            <?php
+            }
         } else {
-        ?>   
-        <div class="row">
-            <div class="col-sm-3">
-				<?php echo 'Error creating record: ' . $con->error; ?>
-			</div>
-            <div class="col-sm-9">
-                <a href="profile.php" class="btn btn-primary">Back to Profile</a>
-        </div>
-        <?php
-        }
+                ?>
+                <div class="row">
+                    <table class="table table-hover">
+                        <tbody>
+                            <tr class="success">
+                                <td>Authentication already saved!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="row">
+                    <div class="col-sm-3">
+                        <a href="../xero-php-oauth2-app/authorization.php?cid=<?php echo $recordownerid; ?>"><img src="../img/connect-white.svg"></a>
+                    </div>
+                    <div class="col-sm-9">
+                        <a href="profile.php" class="btn btn-primary">Back to Profile</a>
+                    </div>
+                </div>
+                <?php
+            }
 
     } else {
 
     ?>
         <form class="form form-medium" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
             <div class="form-group">
-                <!--<label class="form-label col-sm-4" for="redirecturi">Redirect URI:</label>-->
                 <div class="col-sm-10"><input class="form-control" id="redirecturi" type="text" name="redirecturi" value="<?php echo $redirecturi; ?>" hidden></div>
                 <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $redirecturiErr; ?></span></div>
             </div>
@@ -178,7 +172,7 @@ while ($row9 = $result9->fetch_assoc()) {
             </div>
             <div class="form-group">
                 <label class="form-label col-sm-4" for="clientsecret">Client secret:<span class="text-body-tertiary"><br>(copy from your Xero 'App')</span></label>
-                <div class="col-sm-10"><input class="form-control" id="clientsecret" type="text" name="clientsecret" value="<?php echo $clientsecret; ?>"></div>
+                <div class="col-sm-10"><input class="form-control" id="clientsecret" type="text" name="clientsecret" value="" placeholder="Enter your Client Secret"></div>
                 <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientsecretErr; ?></span></div>
             </div>
             
@@ -194,32 +188,7 @@ while ($row9 = $result9->fetch_assoc()) {
         <div class="row">
             <div class="col-sm-3" style="padding:40px;"><a href="/help/#/connecting-to-xero" target="_blank" class="btn btn-outline-success btn-sm d-inline-flex align-items-center" role="button">How to find the values to enter in the above fields</a></div>
         </div>
-<!--
-        <div class="row">
-            <p>To obtain the values for the fields above, follow these steps to create a Xero app that you will connect LeaseManager to.</p>
 
-            <p>
-                * Login to the Xero developer center with your Xero login <a href="https://developer.xero.com/myapps">(https://developer.xero.com/myapps)</a><br>
-                * Click "New App"<br>
-                * Enter "LeaseManager" as the App name and choose the Web app option.<br>
-                * Enter "https://leasemanager.co.nz" in the Company or application URL field.<br>
-                * Enter "https://leasemanager.co.nz/xero-php-oauth2-app/callback.php" in the Redirect URI field.<br>
-                * Agree to terms and conditions and click "Create App".<br><br>
-                * Go to the Configuration page and click "Generate a secret" button, but don't hit save otherwise the secret will disappear.<br>
-                * Copy your client id and client secret so you can enter the values in LeaseManager.<br>
-                * Click the "Save" button. You secret is now hidden.<br>
-                * Leave the "Login URL for launcher" field empty.<br>
-                * Click on the "Save" button.<br><br>
-                * In LeaseManager enter the Client id and Client secret into the above fields.<br>
-                * Click "Save". You are now ready to 
-
-            </p>
-        </div>
-        <div class="row">
-            <div class="col-sm-3" style="padding:40px;"><img src="img/xero_app_creation_1.png" height="600px"></div>
-            <div class="col-sm-3" style="padding:40px;"><img src="img/xero_app_creation_2.png" height="500px"></div>
-        </div>
--->
         <div class="row">
 
         <?php

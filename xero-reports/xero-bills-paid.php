@@ -1,6 +1,7 @@
 <?php
 // Include the main.php file
 include '../main.php';
+include '../encryption_helper.php';
 // Check if the user is logged in, if not then redirect to login page
 check_loggedin($con);
 // Template code below
