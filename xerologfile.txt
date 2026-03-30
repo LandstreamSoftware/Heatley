@@ -90,3 +90,30 @@ token aquired: eyJhbGciOiJSUzI1NiIsImtpZCI6IjFDQUY4RTY2NzcyRDZEQzAyOEQ2NzI2RkQwM
  refresh token: KBZ7ABwu79Oaqb0Mk_IyVCcmTcPC0NymHK9xmZuiefM 
 
 tenantID: 9efdf86e-54c2-457a-ad5d-0166c8746818 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.contacts.read%20accounting.transactions.read%20accounting.settings.read&state=a006da595ae3810f63a45477a96a6b08&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=F628397B79714D7F8674BBDE7C18EF38 
+ 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings%20accounting.transactions%20accounting.contacts%20accounting.transactions.read%20accounting.settings.read&state=331ff5e682e5637214591f70391e0810&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=F628397B79714D7F8674BBDE7C18EF38 
+ 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.contacts.read%20accounting.transactions.read%20accounting.settings.read&state=4682ca799b1c418cab5b3c3927b08ea8&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=9877F1232B9845D687B6F0415455AF64 
+ 
+code exists 
+token aquired. 
+
+tenantID: 9efdf86e-54c2-457a-ad5d-0166c8746818 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.contacts.read%20accounting.transactions.read%20accounting.settings.read&state=33a8293b5b31e62060fd4a7fe53193bb&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=9877F1232B9845D687B6F0415455AF64 
+ 
+code exists 
+token aquired. 
+
+tenantID: 9efdf86e-54c2-457a-ad5d-0166c8746818 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings%20accounting.transactions%20accounting.contacts&state=9aa327b5865d6cc4a89c6ed14d40c09d&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=9877F1232B9845D687B6F0415455AF64 
+ 
+code exists 
+token aquired. 
+
+tenantID: 9efdf86e-54c2-457a-ad5d-0166c8746818 

@@ -105,7 +105,7 @@ try {
 
 $theToken = $accessToken->getToken();
 $theRefreshToken = $accessToken->getRefreshToken();
-$logMessage = "token aquired: $theToken \n refresh token: $theRefreshToken \n\n";
+$logMessage = "token aquired. \n\n";
 file_put_contents($logFile, $logMessage, FILE_APPEND); 
 
 // Save my tokens, expiration tenant_id

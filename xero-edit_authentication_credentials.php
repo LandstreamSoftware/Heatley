@@ -63,6 +63,9 @@ if ($result->num_rows > 0) {
         $clientid = $row["client_id"];
         $clientsecret = decryptValue($row["client_secret"]);
         $redirecturi = $row["redirect_uri"];
+
+        $clientsecret1 = $row["client_secret"];
+
     } 
 } else {
     $tenantid = $tokenexpiresat = $accesstoken = $refreshtoken = $scopes = $tokenversion = $clientid = $clientsecret = $xeroclientsecretenc = "";
@@ -256,7 +259,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
                 <div class="col-sm-10"><input class="form-control" id="clientsecret" type="text" name="clientsecret" placeholder="Enter your Client Secret" value=""></div>
                 <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $clientsecretErr;?></span></div>
             </div>
-
             <div class="form-group">
                 <label class="form-label col-sm-4" for="tenantid">Tenant ID: <br><span class="text-body-tertiary">(automatically generated)</span></label>
                 <div class="col-sm-10"><input class="form-control" id="tenantid" type="text" name="tenantid" value="<?php echo $tenantid;?>" readonly></div>
@@ -290,7 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and !isset($_POST['manual_refresh_token
             </div>
             <div class="form-group">
                 <label class="form-label col-sm-4" for="redirecturi">Redirect URI: <span class="text-danger">*</span></label>
-                <div class="col-sm-10"><input class="form-control" id="redirecturi" type="text" name="redirecturi" value="<?php echo $redirecturi;?>" readonly></div>
+                <div class="col-sm-10"><input class="form-control" id="redirecturi" type="text" name="redirecturi" value="<?php echo $redirecturi;?>"></div>
                 <div class="col-sm-2"><span class="error"><span class="text-danger"><?php echo $redirecturiErr;?></span></div>
             </div>
             

@@ -10,12 +10,12 @@ include '../encryption_helper.php';
 use GuzzleHttp\Client as GuzzleClient;
 use League\OAuth2\Client\Provider\GenericProvider;
 
-session_start();
+//session_start();
 include '../main.php';
 
 $Q = explode("/", $_SERVER['QUERY_STRING']);
-parse_str($Q[0], $QueryParameters);
-$companyid = (int)$QueryParameters['cid'];
+parse_str($Q[0],$QueryParameters);
+$companyid = $QueryParameters['cid'];
 
 
 /* ---------------------------- CONFIG ---------------------------- */
@@ -23,30 +23,18 @@ $sql = "SELECT * FROM xero_oauth_tokens WHERE companyID = $companyid";
 
 $result = $con->query($sql);
 
-$clientid = '';
-$encryptedClientSecret = '';
-$clientsecret = '';
-$redirecturi = '';
-$scopes = '';
-$recordOwnerID = null;
-
-if ($result && $result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $clientid = $row["client_id"];
-
-        // Keep encrypted value for any future DB write
-        $encryptedClientSecret = $row["client_secret"];
-
-        // Decrypt only for runtime use
-        $clientsecret = decryptValue($encryptedClientSecret);
-
-        $redirecturi = $row["redirect_uri"];
-        $scopes = $row["scopes"];
-        $recordOwnerID = $row["recordOwnerID"] ?? null;
-    }
+if ($result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+      $clientid = $row["client_id"];
+      $clientsecret = decryptValue($row["client_secret"]);
+      $redirecturi  = $row["redirect_uri"];
+      $scopes = $row["scopes"];
+      
+    } 
 }
 
 /* -------------------------- OAUTH CLIENT ------------------------- */
+
 
 $provider = new GenericProvider([
     'clientId'                => $clientid,
@@ -60,22 +48,28 @@ $provider = new GenericProvider([
 
 /* ---------------------------- HELPERS ---------------------------- */
 
+
 function pdo(): PDO
 {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
 
-    $dsn  = $GLOBALS['db_host'];
+
+    $dsn  = $GLOBALS['db _host'];
     $user = $GLOBALS['db_user'];
     $pass = $GLOBALS['db_pass'];
+
 
     $pdo = new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        // If you are on MySQL < 8 and hit auth plugin issues, adjust as needed.
     ]);
+
 
     return $pdo;
 }
+ 
 
 /**
  * Fetch Xero connections to get tenantId(s).
@@ -85,6 +79,7 @@ function fetchXeroConnections(string $accessToken): array
 {
     $http = new GuzzleClient(['timeout' => 20]);
 
+
     $resp = $http->request('GET', 'https://api.xero.com/connections', [
         'headers' => [
             'Authorization' => 'Bearer ' . $accessToken,
@@ -92,9 +87,11 @@ function fetchXeroConnections(string $accessToken): array
         ],
     ]);
 
+
     $json = json_decode((string)$resp->getBody(), true);
     return is_array($json) ? $json : [];
 }
+
 
 /**
  * Upsert token record by company_id.
@@ -105,12 +102,16 @@ function upsertTokenByTenant(array $row): void
 {
     $pdo = pdo();
 
+
+    // Find existing record
     $stmt = $pdo->prepare('SELECT id, token_version FROM xero_oauth_tokens WHERE companyID = :company_id LIMIT 1');
-    $stmt->execute([':company_id' => $row['companyID']]);
+    $stmt->execute([':company_id' => $companyid]);
     $existing = $stmt->fetch();
+
 
     if ($existing) {
         $newVersion = ((int)$existing['token_version']) + 1;
+
 
         $sql = '
             UPDATE xero_oauth_tokens
@@ -127,16 +128,14 @@ function upsertTokenByTenant(array $row): void
         ';
         $upd = $pdo->prepare($sql);
         $upd->execute([
-            ':id'                      => (int)$existing['id'],
-            ':access_token'            => $row['access_token'],
-            ':refresh_token'           => $row['refresh_token'],
-            ':access_token_expires_at' => $row['access_token_expires_at'],
-            ':scopes'                  => $row['scopes'],
-            ':client_id'               => $row['client_id'],
-            ':client_secret'           => $row['client_secret'],   // keep encrypted in DB
-            ':redirect_uri'            => $row['redirect_uri'],
-            ':recordOwnerID'           => $row['recordOwnerID'],
-            ':token_version'           => $newVersion,
+            ':id'                     => (int)$existing['id'],
+            ':access_token'           => $row['access_token'],
+            ':refresh_token'          => $row['refresh_token'],
+            ':access_token_expires_at'=> $row['access_token_expires_at'],
+            ':scopes'                 => $row['scopes'],
+            ':client_id'              => $row['client_id'],
+            ':client_secret'          => $row['client_secret'],
+            ':token_version'          => $newVersion,
         ]);
     } else {
         $sql = '
@@ -160,7 +159,7 @@ function upsertTokenByTenant(array $row): void
             ':scopes'                  => $row['scopes'],
             ':token_version'           => 0,
             ':client_id'               => $row['client_id'],
-            ':client_secret'           => $row['client_secret'],   // keep encrypted in DB
+            ':client_secret'           => $row['client_secret'],
             ':recordOwnerID'           => $row['recordOwnerID'],
             ':redirect_uri'            => $row['redirect_uri'],
         ]);
@@ -170,6 +169,7 @@ function upsertTokenByTenant(array $row): void
 
 /* --------------------------- FLOW START --------------------------- */
 
+
 try {
     // Step 1: Redirect user to Xero if no auth code
     if (!isset($_GET['code'])) {
@@ -178,15 +178,16 @@ try {
             'scope' => $scopes,
         ]);
 
-        $logFile = XERO_LOG_FILE_PATH;
-        $logMessage = "authorizationUrl:  \n $authorizationUrl \n \n";
-        file_put_contents($logFile, $logMessage, FILE_APPEND);
+$logFile = XERO_LOG_FILE_PATH;
+$logMessage = "authorizationUrl:  \n $authorizationUrl \n \n";
+file_put_contents($logFile, $logMessage, FILE_APPEND);        
 
         $_SESSION['oauth2state'] = $provider->getState();
 
         header('Location: ' . $authorizationUrl);
         exit;
     }
+
 
     // Step 2: Validate state to protect against CSRF
     if (
@@ -206,9 +207,12 @@ try {
     $accessToken  = $token->getToken();
     $refreshToken = $token->getRefreshToken();
 
+
     if (!$refreshToken) {
+        // This typically means offline_access was not granted
         throw new RuntimeException('No refresh token returned. Ensure "offline_access" is included in scopes and consent was granted.');
     }
+
 
     // Step 4: Discover tenant_id via connections endpoint
     $connections = fetchXeroConnections($accessToken);
@@ -220,30 +224,35 @@ try {
     $expiresAt = (new DateTimeImmutable())->setTimestamp($token->getExpires());
     $expiresAtSql = $expiresAt->format('Y-m-d H:i:s');
 
-    $scopesString = is_array($scopes) ? implode(' ', $scopes) : (string)$scopes;
+
+    $scopesString = implode(' ', $scopes);
+
 
     foreach ($connections as $conn) {
         if (empty($conn['tenantId'])) continue;
 
+
         upsertTokenByTenant([
-            'companyID'               => $companyid,
+            'companyID'               => $companyID,
             'tenant_id'               => (string)$conn['tenantId'],
             'access_token'            => $accessToken,
             'refresh_token'           => $refreshToken,
             'token_key_version'       => 1,
             'access_token_expires_at' => $expiresAtSql,
             'scopes'                  => $scopesString,
-            'client_id'               => $clientid,
-            'client_secret'           => $encryptedClientSecret,   // write encrypted value back
+            'client_id'               => $clientId,
+            'client_secret'           => $clientSecret,
             'recordOwnerID'           => $recordOwnerID,
-            'redirect_uri'            => $redirecturi,
+            'redirect_uri'            => $redirectUri,
         ]);
     }
 
+    // You can redirect to your app page here
     header('Content-Type: text/plain; charset=utf-8');
     echo "Success.\n";
     echo "Saved token set for " . count($connections) . " tenant connection(s).\n";
     exit;
+
 
 } catch (Throwable $e) {
     http_response_code(500);

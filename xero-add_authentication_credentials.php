@@ -44,8 +44,7 @@ while ($row9 = $result9->fetch_assoc()) {
 
     <?php
     // define variables and set to empty values
-    //$scopes = "openid profile email offline_access accounting.settings accounting.transactions accounting.contacts accounting.transactions.read accounting.settings.read";
-    $scopes = "openid profile email offline_access accounting.contacts.read accounting.transactions.read accounting.settings.read";
+    $scopes = xero_scopes;
     $clientid = $clientsecret = $xeroclientsecretenc = "";
     $redirecturi = xero_redirect_uri;
     $scopesErr = $clientidErr = $clientsecretErr = $redirecturiErr = "";

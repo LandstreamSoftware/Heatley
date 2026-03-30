@@ -59,4 +59,5 @@ define('public_key_compatible_path', '__DIR__ . /public_key.pem');
 define('xero_redirect_uri', 'http://localhost/xero-php-oauth2-app/callback.php');
 /* Endcryption key for Xero encrypting the client secret */
 define('APP_SECRET_KEY', '5q4q6mTw7D+PDsEq8FU/l+x5TMePkVWsGdbnzxobYiE=');
+define('xero_scopes', 'openid profile email offline_access accounting.settings.read accounting.invoices.read accounting.payments.read accounting.banktransactions.read accounting.contacts.read accounting.manualjournals.read');
 ?>
