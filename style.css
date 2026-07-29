@@ -414,7 +414,7 @@ h6 {
 }
 
 .header {
-  background-color: #2c3441;
+  background-color: #2b3035;
   height: 65px;
   width: 100%;
 }
@@ -1412,7 +1412,7 @@ div.gallery:nth-child(4n+1) {
       letter-spacing: .05em;
       background: #e1fae7;
     }
-    .upgrade-plan-lable {
+    .upgrade-plan-label {
       font-size: .85rem;
       text-transform: uppercase;
       letter-spacing: .05em;

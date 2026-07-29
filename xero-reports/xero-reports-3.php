@@ -6,6 +6,8 @@ include_once '../encryption_helper.php';
 check_loggedin($con);
 // Template code below
 
+
+
 function h($v) {
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
@@ -47,6 +49,7 @@ require '../vendor/autoload.php';
 $nowD = date('d');
 $nowM = date('m');
 $nowY = date('Y');
+$tenantid = '0';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (!empty($_POST["fromDate"]) && !empty($_POST["toDate"])) {
@@ -106,24 +109,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $fromDate = sprintf('%04d,%02d,%02d', $nowY, $nowM, 1);
         $toDate = sprintf('%04d,%02d,%02d', $nowY, $nowM, $nowD);
     }
-  } 
+  }
+  if (!empty($_POST["tenantid"])) {
+    $tenantid = $_POST["tenantid"];
+  } else {
+    $tenantid = '0';
+  }
+
 } else {
     $startInit = $nowY."-".$nowM."-1"; //Start with the 1st of this month
-    $start = date_create($startInit);
+ 
+//    $start = date_create($startInit);
+$start = date_create("first day of last month");
     $fromDate = date_format($start, "Y,m,d");
-
     $endInit = $nowY."-".$nowM."-".$nowD;
-    $end = date_create($endInit);
+//    $end = date_create($endInit);
+$end = date_create("last day of last month");
     $toDate = date_format($end, "Y,m,d");
 
-    $fromDateObject = new DateTime($startInit);
-    $toDateObject = new DateTime($endInit);
+//    $fromDateObject = new DateTime($startInit);
+$fromDateObject = new DateTime("first day of last month 00:00:00");
+//    $toDateObject = new DateTime($endInit);
+$toDateObject = new DateTime("last day of last month");
 
     $fromDisplay = date_format($fromDateObject, 'd F Y');
     $toDisplay = date_format($toDateObject, 'd F Y');
 
-    $from = sprintf('%04d-%02d-%02d', $nowY, $nowM, 1);
-    $to = $endInit;
+//    $from = sprintf('%04d-%02d-%02d', $nowY, $nowM, 1);
+$from = $fromDateObject->format('Y-m-d');
+//    $to = $endInit;
+$to = $toDateObject->format('Y-m-d');
 }
 
 
@@ -206,10 +221,10 @@ $searchTerm = null;
 	</div>
 </div>
 
-
 <div class="row">
     <div class="col-sm-6" style="margin:auto;">
         <h5>For the period <?php echo $fromDisplay;?> to <?php echo $toDisplay;?></h5>
+        Sorted by Currency then Date
     </div>
     <div class="col-sm-6">
         <form class="form" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" style="display:flex;">
@@ -221,6 +236,24 @@ $searchTerm = null;
             <label class="form-label" for="toDate">To:</label>
             <div class="col-sm-3 px-3">
                 <input class="form-control" id="toDate" type="date" name="toDate" value="<?php echo $to;?>">
+            </div>
+
+            <label class="form-label" for="tenantid">Company:</label>
+            <div class="col-sm-4 px-3">
+                <select class="form-control" id="tenantid" name="tenantid">
+                <?php
+                    echo "<option value=\"0\"> - Select an Organisation - </option>";
+                    foreach ($connections as $company) {
+                        $companyId   = $company->getTenantId();
+                        $companyName = $company->getTenantName();
+                        if($companyId == $tenantid){
+                            echo "<option value=\"" . $companyId . "\" selected>". $companyName . "</option>";
+                        } else {
+                            echo "<option value=\"" . $companyId . "\">". $companyName . "</option>";
+                        }
+                    }
+                ?>
+                </select>
             </div>
 
             <div class="col-sm-1">
@@ -257,51 +290,63 @@ try {
         $tenantId   = $connection->getTenantId();
         $tenantName = $connection->getTenantName();
 
+        // Skip this tenant if it has not been selected
+        if ($tenantId !== $tenantid) {
+            continue;
+        }
+
         // Ensure tenant bucket
         if (!isset($groupedData[$tenantId])) {
             $groupedData[$tenantId] = [
                 'Tenants' => [
                     'Name'     => $tenantName,
                     'TenantID' => $tenantId,
-                ],
+                ],              
             ];
         }
 
-        // 1) Fetch active BANK accounts
-        $bankAccounts = [];
-        $accountsResults = $accountingApi->getAccounts(
-            $tenantId,
-            null,
-            'Status=="ACTIVE" AND Type=="BANK"'
-        );
-
-        foreach ($accountsResults->getAccounts() as $account) {
-            $accountId = $account->getAccountId();
-
-            $bankAccounts[$accountId] = true;
-
-            // Ensure account bucket WITH Payments container
-            if (!isset($groupedData[$tenantId][$accountId])) {
-                $groupedData[$tenantId][$accountId] = [
-                    'Accounts' => [
-                        'AccountID' => $accountId,
-                        'Type'      => $account->getType(),
-                        'Name'      => $account->getName(),
-                        'Status'    => $account->getStatus(),
-                    ],
-                    'Payments' => [],   // <-- this is the important part
-                ];
-            } elseif (!isset($groupedData[$tenantId][$accountId]['Payments'])) {
-                $groupedData[$tenantId][$accountId]['Payments'] = [];
-            }
-        }
-
         // 2) Fetch payments
+try {
         $paymentsResults = $accountingApi->getPayments(
             $tenantId,
             null,
-            'Date>=DateTime('.$fromDate.') AND Date<=DateTime('.$toDate.')'
+            'Date>=DateTime('.$fromDate.') AND Date<=DateTime('.$toDate.') AND Status!="DELETED"'
         );
+} catch (\XeroAPI\XeroPHP\ApiException $e) {
+
+    $headers = method_exists($e, 'getResponseHeaders') ? $e->getResponseHeaders() : [];
+
+    $dayRemaining = (int)($headers['X-DayLimit-Remaining'][0] ?? -1);
+    $minRemaining = (int)($headers['X-MinLimit-Remaining'][0] ?? -1);
+    $retryAfter   = (int)($headers['Retry-After'][0] ?? 0);
+    $retryAfterMinutes = (int) floor($retryAfter / 60);
+    $problem      = $headers['X-Rate-Limit-Problem'][0] ?? 'unknown';
+
+//    echo "<pre>";
+//    echo "Day remaining: $dayRemaining\n";
+//    echo "Minute remaining: $minRemaining\n";
+//    echo "Problem: $problem\n";
+//    echo "Retry after: $retryAfterMinutes minutes\n";
+//    echo "</pre>";
+
+    if ($problem === 'day') {
+        echo "<h6 style=\"color: red;\">Xero daily limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+    if ($problem === 'minute') {
+        echo "<h6 style=\"color: red;\">Xero minute limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+    if ($problem === 'concurrent') {
+        echo "<h6 style=\"color: red;\">Xero concurrent limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+
+    echo "Xero API error: " . $problem;
+//    echo "Xero API error: " . $e->getMessage();
+    exit;
+}
+
 
         foreach ($paymentsResults->getPayments() as $payment) {
 
@@ -309,9 +354,6 @@ try {
             if (!$paymentInvoiceStub) continue;
             if ($paymentInvoiceStub->getType() !== 'ACCPAY') continue;
             if (!$payment->getAccount()) continue;
-
-            $accountId = $payment->getAccount()->getAccountId();
-            if (!isset($bankAccounts[$accountId])) continue;
 
             // Fetch full invoice(s) for this payment's invoice id
             $invoicesResult = $accountingApi->getInvoices(
@@ -353,22 +395,26 @@ try {
                 ];
             }
 
-            // Append Payment UNDER the account's Payments array
-            $groupedData[$tenantId][$accountId]['Payments'][] = [
-                'Date'         => $payment->getDate(),
-                'CurrencyRate' => $payment->getCurrencyRate(),
-                'Amount'       => number_format($payment->getAmount(), 2),
-                'Invoices'     => $invoicesPayload, // <-- multiple invoices
-            ];
-        }
-    }
+
+        $groupedData[$tenantId]['Payments'][] = [
+            'PaymentID'  => $payment->getPaymentID(),
+            'BatchPaymentID'  => $payment->getBatchPaymentID(),
+            'PaymentType'  => $payment->getPaymentType(),
+            'Status'  => $payment->getStatus(),
+                        'Date'         => $payment->getDate(),
+                        'CurrencyRate' => $payment->getCurrencyRate(),
+                        'Amount'       => number_format($payment->getAmount(), 2),
+                        'Invoices'     => $invoicesPayload, // <-- multiple invoices
+                    ];
+                }
+            }
 
 
 
 
-    echo '<pre>';
-    //print_r($groupedData);
-    echo '</pre>';
+//echo '<pre>';
+//    print_r($groupedData);
+//echo '</pre>';
 
 
 
@@ -397,6 +443,22 @@ try {
     }
 
 
+    // Sort the array by currency
+    foreach ($groupedData as $tenantId => &$bucket) {
+        if (!empty($bucket['Payments']) && is_array($bucket['Payments'])) {
+            usort($bucket['Payments'], function ($a, $b) {
+                $currencyA = $a['Invoices'][0]['CurrencyCode'] ?? '';
+                $currencyB = $b['Invoices'][0]['CurrencyCode'] ?? '';
+                return $currencyA <=> $currencyB;
+            });
+        }
+    }
+    unset($bucket);
+
+
+
+
+
     $rowsHtml = '';
 
     foreach ($groupedData as $tenantId => $bucket) {
@@ -405,58 +467,60 @@ try {
         $tenantName = $bucket['Tenants']['Name'] ?? '';
         $rowsHtml .= "<tr class=\"table-info\"><td colspan=\"6\"><strong>" . xss($tenantName) . "</strong></td></tr>\n";
 
-        // Accounts under tenant
-        foreach ($bucket as $accountId => $accountNode) {
-            if ($accountId === 'Tenants' || !is_array($accountNode)) {
+        // Payments directly under tenant
+        $payments = $bucket['Payments'] ?? [];
+
+        foreach ($payments as $p) {
+            $paymentId   = $p['PaymentID'] ?? '';
+            $paymentType   = $p['PaymentType'] ?? '';
+            $batchPaymentId   = $p['BatchPaymentID'] ?? '';
+            $paymentDate = formatXeroDate($p['Date'] ?? '');
+            $status   = $p['Status'] ?? '';
+            $amount      = $p['Amount'] ?? '';
+            $invoices    = $p['Invoices'] ?? [];
+
+            if (empty($invoices)) {
+                $rowsHtml .= "<tr style=\"vertical-align:middle;\">"
+                    . "<td style=\"font-weight:400; text-align:left;\">" . xss($paymentDate) . "</td>"
+                    . "<td></td>"
+                    . "<td></td>"
+                    . "<td></td>"
+                    . "<td></td>"
+                    . "<td style=\"font-weight:400; text-align:right; padding-right:20px;\">" . xss($amount) . "</td>"
+                    . "</tr>\n";
                 continue;
             }
 
-            // Account
-            $accountName = $accountNode['Accounts']['Name'] ?? '';
-            $rowsHtml .= "<tr class=\"table-secondary\"><td colspan=\"6\">" . xss($accountName) . "</td></tr>\n";
+            foreach ($invoices as $inv) {
+                $invoiceNo    = $inv['InvoiceNumber'] ?? '';
+                $currencyCode = $inv['CurrencyCode'] ?? '';
+                $contact      = $inv['Contact'] ?? '';
+                $lineItems    = $inv['LineItems'] ?? [];
 
-            $payments = $accountNode['Payments'] ?? [];
-            foreach ($payments as $p) {
+                $lineItemsHtml = "<ul style=\"list-style-type:none; margin:0; padding:5px 0;\">";
+                foreach ($lineItems as $li) {
+                    $desc       = $li['Description'] ?? '';
+                    $qty        = $li['Quantity'] ?? '';
+                    $unitAmount = $li['UnitAmount'] ?? '';
 
-                $paymentDate  = formatXeroDate($p['Date'] ?? '');
-                $amount       = $p['Amount'] ?? '';
-                $invoices     = $p['Invoices'] ?? [];
-
-                // Payment row (summary)
-                $rowsHtml .= "<tr style=\"vertical-align:middle;\">"
-                    . "<td style=\"font-weight:400; text-align:left;\">" . xss($paymentDate) . "</td>";
-
-                // Invoices under payment
-                foreach ($invoices as $inv) {
-                    $invoiceNo    = $inv['InvoiceNumber'] ?? '';
-                    $currencyCode = $inv['CurrencyCode'] ?? '';
-                    $contact      = $inv['Contact'] ?? '';
-                    $lineItems    = $inv['LineItems'] ?? [];
-
-                    // Invoice row
-                    $rowsHtml .= "<td style=\"font-weight:400; text-align:left;\">" . xss($invoiceNo) . "</td>"
-                        . "<td style=\"font-weight:400; text-align:left;\">" . xss($contact) . "</td>";
-
-                    // Line items under invoice
-                    $lineItemsHtml = "<td style=\"font-weight:400; text-align:left;\"><ul style=\"list-style-type:none; margin:0px; padding:5px 0 5px 0;\">";
-
-                    
-                    foreach ($lineItems as $li) {
-                        $desc       = $li['Description'] ?? '';
-                        $qty        = $li['Quantity'] ?? '';
-                        $unitAmount = $li['UnitAmount'] ?? '';
-                        if (count($lineItems) > 1) {
-                            $lineItemsHtml .= "<li style=\"font-weight:400; text-align:left;\">" . xss($desc) . " (" . $qty . " x $" . $unitAmount . ")</li>"; 
-                        } else {
-                            $lineItemsHtml .= "<li style=\"font-weight:400; text-align:left;\">" . xss($desc) . "</li>"; 
-                        }
-                        
+                    if (count($lineItems) > 1) {
+                        $lineItemsHtml .= "<li style=\"font-weight:400; text-align:left;\">"
+                            . xss($desc) . " (" . xss($qty) . " x $" . xss($unitAmount) . ")</li>";
+                    } else {
+                        $lineItemsHtml .= "<li style=\"font-weight:400; text-align:left;\">"
+                            . xss($desc) . "</li>";
                     }
-                    $rowsHtml .= $lineItemsHtml . "</ul></td>";
                 }
-                $rowsHtml .= "<td style=\"font-weight:400; text-align:center;\">" . xss($currencyCode) . "</td>"
+                $lineItemsHtml .= "</ul>";
+
+                $rowsHtml .= "<tr style=\"vertical-align:middle;\">"
+                    . "<td style=\"font-weight:400; text-align:left;\">" . xss($paymentDate) . "</td>"
+                    . "<td style=\"font-weight:400; text-align:left;\">" . xss($invoiceNo) . "</td>"
+                    . "<td style=\"font-weight:400; text-align:left;\">" . xss($contact) . "</td>"
+                    . "<td style=\"font-weight:400; text-align:left;\">" . $lineItemsHtml . "</td>"
+                    . "<td style=\"font-weight:400; text-align:center;\">" . xss($currencyCode) . "</td>"
                     . "<td style=\"font-weight:400; text-align:right; padding-right:20px;\">" . xss($amount) . "</td>"
-                    . "</tr>\n";;
+                    . "</tr>\n";
             }
         }
     }
@@ -476,7 +540,7 @@ try {
     </div>
 
     <div class="col-sm-3">
-        <form class="form" method="post" action="xero-reports-1_export.php">
+        <form class="form" method="post" action="xero-reports-3_export.php">
 
             <input type="hidden" name="ifModifiedSince" value="<?= $ifModifiedSince instanceof DateTimeInterface ? htmlspecialchars($ifModifiedSince->format(DateTime::ATOM)) : null ?>">
             <input type="hidden" name="from" value="<?= htmlspecialchars($fromDate ?? '') ?>">
@@ -485,6 +549,7 @@ try {
             <input type="hidden" name="page" value="<?= htmlspecialchars((string)($page ?? 1)) ?>">
             <input type="hidden" name="pageSize" value="<?= htmlspecialchars((string)($pageSize ?? 100)) ?>">
             <input type="hidden" name="token" value="<?= htmlspecialchars((string)($accesstoken)) ?>">
+            <input type="hidden" name="tenantid" value="<?= $tenantid ?>">
 
             <!-- Label -->
             <label for="filename">
@@ -507,9 +572,36 @@ try {
     </div>
 </div>
 
+<?php
 
-    <?php
 } catch (Exception $e) {
-  echo 'Xero API exception: ' . htmlspecialchars($e->getMessage());
+    $headers = method_exists($e, 'getResponseHeaders') ? $e->getResponseHeaders() : [];
+
+    $dayRemaining = (int)($headers['X-DayLimit-Remaining'][0] ?? -1);
+    $minRemaining = (int)($headers['X-MinLimit-Remaining'][0] ?? -1);
+    $retryAfter   = (int)($headers['Retry-After'][0] ?? 0);
+    $retryAfterMinutes = (int) floor($retryAfter / 60);
+    $problem      = $headers['X-Rate-Limit-Problem'][0] ?? 'unknown';
+
+//    echo "<pre>";
+//    echo "Day remaining: $dayRemaining\n";
+//    echo "Minute remaining: $minRemaining\n";
+//    echo "Problem: $problem\n";
+//    echo "Retry after: $retryAfterMinutes minutes\n";
+//    echo "</pre>";
+
+    if ($problem === 'day') {
+        echo "<h6 style=\"color: red;\">Xero daily limit reached for this Organisation. Try again in {$retryAfterMinutes} - 1 minutes.</h6>";
+        exit;
+    }
+    if ($problem === 'minute') {
+        echo "<h6 style=\"color: red;\">Xero minute limit reached for this Organisation. Try shortening the date range or waiting for 60 seconds before trying again.</h6>";
+        exit;
+    }
+    if ($problem === 'concurrent') {
+        echo "<h6 style=\"color: red;\">Xero concurrent limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+    echo 'Xero API exception: ' . htmlspecialchars($e->getMessage());
 }
 ?>

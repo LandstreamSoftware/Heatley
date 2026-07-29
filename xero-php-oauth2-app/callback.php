@@ -3,7 +3,7 @@ ini_set('display_errors', 'On');
 require '../vendor/autoload.php';
 include '../main.php';
 require_once('../xero-php-oauth2-app/storage.php');
-include '../encryption_helper.php';
+include_once '../encryption_helper.php';
 
 
 // Storage Classe uses sessions for storing token > extend to your DB of choice

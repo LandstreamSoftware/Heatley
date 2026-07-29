@@ -79,11 +79,7 @@ $result3 = $con->query($sql3);
     </form>
   </div>
 
-  <!--<div class="col-sm-8">
-  </div>
-  <div class="col-sm-4" style="text-align:left;">
-    <input class="form-control" id="myInput" type="text" placeholder="Search in company name, address or company type field">
-  </div>-->
+
 </div>
 
 <script>

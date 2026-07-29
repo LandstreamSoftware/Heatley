@@ -165,14 +165,25 @@ $stmt->execute();
 $resultuser = $stmt->get_result();
 ```
 
-* 4
+### Use SQL Query Rewriter
+
+Use the GPT to rewrite the SQL queries so they are prepared statements.
+
+### New Scopes from 2 March 2026
+
+Scopes should now be set in the config.php file with the new granular scopes that were introduced on 2 March 2026.
+
+New base level scopes should be:
 
 ```
-
-```
-
-Replace with:
-
-```
-
+openid
+profile
+email
+offline_access
+accounting.settings.read
+accounting.invoices.read
+accounting.payments.read
+accounting.banktransactions.read
+accounting.contacts.read
+accounting.manualjournals.read
 ```

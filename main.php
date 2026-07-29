@@ -3,6 +3,7 @@
 // Include the configuration file
 include_once 'config.php';
 require_once 'vendor/autoload.php';
+include_once 'encryption_helper.php';
 // We need to use sessions, so you should always start sessions using the below function
 session_start();
 // Namespaces
@@ -89,6 +90,7 @@ function template_header($title)
 	<!--	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+		<link rel="icon" type="image/x-icon" href="/favicon.ico">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 		<style>
 		.pagination a {

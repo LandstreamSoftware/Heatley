@@ -47,6 +47,7 @@ require '../vendor/autoload.php';
 $nowD = date('d');
 $nowM = date('m');
 $nowY = date('Y');
+$tenantid = '0';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if (!empty($_POST["fromDate"]) && !empty($_POST["toDate"])) {
@@ -106,7 +107,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $fromDate = sprintf('%04d,%02d,%02d', $nowY, $nowM, 1);
         $toDate = sprintf('%04d,%02d,%02d', $nowY, $nowM, $nowD);
     }
-  } 
+  }
+  if (!empty($_POST["tenantid"])) {
+    $tenantid = $_POST["tenantid"];
+  } else {
+    $tenantid = '0';
+  }
+
 } else {
     $startInit = $nowY."-".$nowM."-1"; //Start with the 1st of this month
     $start = date_create($startInit);
@@ -223,6 +230,24 @@ $searchTerm = null;
                 <input class="form-control" id="toDate" type="date" name="toDate" value="<?php echo $to;?>">
             </div>
 
+            <label class="form-label" for="tenantid">Company:</label>
+            <div class="col-sm-4 px-3">
+                <select class="form-control" id="tenantid" name="tenantid">
+                <?php
+                    echo "<option value=\"0\"> - Select an Organisation - </option>";
+                    foreach ($connections as $company) {
+                        $companyId   = $company->getTenantId();
+                        $companyName = $company->getTenantName();
+                        if($companyId == $tenantid){
+                            echo "<option value=\"" . $companyId . "\" selected>". $companyName . "</option>";
+                        } else {
+                            echo "<option value=\"" . $companyId . "\">". $companyName . "</option>";
+                        }
+                    }
+                ?>
+                </select>
+            </div>
+
             <div class="col-sm-1">
             <input type="submit" value="Search" class="btn btn-primary">
             </div>
@@ -256,6 +281,11 @@ try {
 
         $tenantId   = $connection->getTenantId();
         $tenantName = $connection->getTenantName();
+
+        // Skip this tenant if it has not been selected
+        if ($tenantId !== $tenantid) {
+            continue;
+        }
 
         // Ensure tenant bucket
         if (!isset($groupedData[$tenantId])) {
@@ -367,7 +397,7 @@ try {
 
 
     echo '<pre>';
-    //print_r($groupedData);
+//    print_r($groupedData);
     echo '</pre>';
 
 

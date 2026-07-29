@@ -5,7 +5,7 @@ ini_set('display_errors', 'On');
 error_reporting(E_ALL);
 
 require '../vendor/autoload.php';
-include '../encryption_helper.php';
+include_once '../encryption_helper.php';
 
 use GuzzleHttp\Client as GuzzleClient;
 use League\OAuth2\Client\Provider\GenericProvider;

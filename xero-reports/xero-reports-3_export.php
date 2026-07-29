@@ -37,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $iDs = null;
     $invoiceNumbers = null;
     $contactIDs = null;
-    $statuses = array("PAID, AUTHORISED");
+    $status = 'AUTHORISED';
     $page = $_POST["page"];
     $includeArchived = null;
     $createdByMyApp = null;
@@ -47,6 +47,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $searchTerm = null;
 
     $accesstoken = $_POST["token"];
+
+    $tenantid = $_POST["tenantid"];
 
     try {
 
@@ -72,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sheet->setTitle('Payments');
 
         // Headers
-        $headers = ['Date Paid', 'Invoice Number', 'Paid To', 'Description', 'Currency', 'Tracking', 'Amount'];
+        $headers = ['Date Paid', 'Invoice Number', 'Paid To', 'Description', 'Currency', 'Amount'];
         $sheet->fromArray($headers, null, 'A1');
 
         // Data
@@ -100,6 +102,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $tenantId   = $connection->getTenantId();
             $tenantName = $connection->getTenantName();
 
+                    // Skip this tenant if it has not been selected
+        if ($tenantId !== $tenantid) {
+            continue;
+        }
+
             // Ensure tenant bucket
             if (!isset($groupedData[$tenantId])) {
                 $groupedData[$tenantId] = [
@@ -110,41 +117,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 ];
             }
 
-            // 1) Fetch active BANK accounts
-            $bankAccounts = [];
-            $accountsResults = $accountingApi->getAccounts(
-                $tenantId,
-                null,
-                'Status=="ACTIVE" AND Type=="BANK"'
-            );
-
-            foreach ($accountsResults->getAccounts() as $account) {
-                $accountId = $account->getAccountId();
-
-                $bankAccounts[$accountId] = true;
-
-                // Ensure account bucket WITH Payments container
-                if (!isset($groupedData[$tenantId][$accountId])) {
-                    $groupedData[$tenantId][$accountId] = [
-                        'Accounts' => [
-                            'AccountID' => $accountId,
-                            'Type'      => $account->getType(),
-                            'Name'      => $account->getName(),
-                            'Status'    => $account->getStatus(),
-                        ],
-                        'Payments' => [],   // <-- this is the important part
-                    ];
-                } elseif (!isset($groupedData[$tenantId][$accountId]['Payments'])) {
-                    $groupedData[$tenantId][$accountId]['Payments'] = [];
-                }
-            }
-
             // 2) Fetch payments
+try {
             $paymentsResults = $accountingApi->getPayments(
                 $tenantId,
                 null,
-                'Date>=DateTime('.$fromDate.') AND Date<=DateTime('.$toDate.')'
+                'Date>=DateTime('.$fromDate.') AND Date<=DateTime('.$toDate.') AND Status!="DELETED"'
             );
+} catch (\XeroAPI\XeroPHP\ApiException $e) {
+
+    $headers = method_exists($e, 'getResponseHeaders') ? $e->getResponseHeaders() : [];
+
+    $dayRemaining = (int)($headers['X-DayLimit-Remaining'][0] ?? -1);
+    $minRemaining = (int)($headers['X-MinLimit-Remaining'][0] ?? -1);
+    $retryAfter   = (int)($headers['Retry-After'][0] ?? 0);
+    $retryAfterMinutes = (int) floor($retryAfter / 60);
+    $problem      = $headers['X-Rate-Limit-Problem'][0] ?? 'unknown';
+
+//    echo "<pre>";
+//    echo "Day remaining: $dayRemaining\n";
+//    echo "Minute remaining: $minRemaining\n";
+//    echo "Problem: $problem\n";
+//    echo "Retry after: $retryAfterMinutes minutes\n";
+//    echo "</pre>";
+
+    if ($problem === 'day') {
+        echo "<h6 style=\"color: red;\">Xero daily limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+    if ($problem === 'minute') {
+        echo "<h6 style=\"color: red;\">Xero minute limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+    if ($problem === 'concurrent') {
+        echo "<h6 style=\"color: red;\">Xero concurrent limit reached for this Organisation. Try again in {$retryAfterMinutes} minutes.</h6>";
+        exit;
+    }
+
+    echo "Xero API error: " . $problem;
+//    echo "Xero API error: " . $e->getMessage();
+    exit;
+}
+
 
             foreach ($paymentsResults->getPayments() as $payment) {
 
@@ -152,9 +166,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (!$paymentInvoiceStub) continue;
                 if ($paymentInvoiceStub->getType() !== 'ACCPAY') continue;
                 if (!$payment->getAccount()) continue;
-
-                $accountId = $payment->getAccount()->getAccountId();
-                if (!isset($bankAccounts[$accountId])) continue;
 
                 // Fetch full invoice(s) for this payment's invoice id
                 $invoicesResult = $accountingApi->getInvoices(
@@ -177,21 +188,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $lineItemsPayload = [];
                     $lineItems = $inv->getLineItems() ?? [];
                     foreach ($lineItems as $li) {
-                        $trackingItemsPayload = [];
-                        $trackingItems = $li->getTracking();
-                        foreach ($trackingItems as $ti) {
-                            $trackingItemsPayload[] = [
-                                'TrackingName' => $ti->getName(),
-                                'TrackingOption' => $ti->getOption(),
-                                'TrackingCategoryID' => $ti->getTrackingCategoryID(),
-                            ];
-                        }
-
                         $lineItemsPayload[] = [
                             'Description' => $li->getDescription(),
                             'Quantity'    => $li->getQuantity(),
                             'UnitAmount'  => $li->getUnitAmount(),
-                            'Tracking'  => $trackingItemsPayload,
                         ];
                     }
 
@@ -207,16 +207,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     ];
                 }
 
-                // Append Payment UNDER the account's Payments array
-                $groupedData[$tenantId][$accountId]['Payments'][] = [
-                    'Date'         => $payment->getDate(),
-                    'CurrencyRate' => $payment->getCurrencyRate(),
-                    'Amount'       => number_format($payment->getAmount(), 2),
-                    'Invoices'     => $invoicesPayload, // <-- multiple invoices
-                ];
+
+                $groupedData[$tenantId]['Payments'][] = [
+                    'PaymentID'  => $payment->getPaymentID(),
+                    'BatchPaymentID'  => $payment->getBatchPaymentID(),
+                    'PaymentType'  => $payment->getPaymentType(),
+                    'Status'  => $payment->getStatus(),
+                        'Date'         => $payment->getDate(),
+                        'CurrencyRate' => $payment->getCurrencyRate(),
+                        'Amount'       => number_format($payment->getAmount(), 2),
+                        'Invoices'     => $invoicesPayload, // <-- multiple invoices
+                    ];
             }
         }
 
+
+
+//echo '<pre>';
+//    print_r($groupedData);
+//echo '</pre>';
 
 
     // Build the spreadsheet data
@@ -224,10 +233,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Tenant
         $tenantName = $bucket['Tenants']['Name'] ?? '';
-        $sheet->mergeCells("A{$r}:G{$r}");
+        $sheet->mergeCells("A{$r}:F{$r}");
         $sheet->setCellValue("A{$r}", xss($tenantName));
         $sheet->getRowDimension($r)->setRowHeight(20);
-        $sheet->getStyle("A{$r}:G{$r}")->applyFromArray([
+        $sheet->getStyle("A{$r}:F{$r}")->applyFromArray([
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
@@ -247,32 +256,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $r++;
 
         // Accounts under tenant
-        foreach ($bucket as $accountId => $accountNode) {
-            if ($accountId === 'Tenants' || !is_array($accountNode)) {
-                continue;
-            }
+//        foreach ($bucket as $accountId => $accountNode) {
+//            if ($accountId === 'Tenants' || !is_array($accountNode)) {
+//                continue;
+//            }
 
             // Account
-            $accountName = $accountNode['Accounts']['Name'] ?? '';
+//            $accountName = $accountNode['Accounts']['Name'] ?? '';
 
-            $sheet->mergeCells("A{$r}:G{$r}");
-            $sheet->setCellValue("A{$r}", xss($accountName));
-            $sheet->getStyle("A{$r}:F{$r}")->applyFromArray([
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => [
-                        'rgb' => 'D6D8DB',
-                    ],
-                ],
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_LEFT,
-                ],
-            ]);
-            
+//            $sheet->mergeCells("A{$r}:F{$r}");
+//            $sheet->setCellValue("A{$r}", xss($accountName));
+//            $sheet->getStyle("A{$r}:F{$r}")->applyFromArray([
+//                'fill' => [
+//                    'fillType' => Fill::FILL_SOLID,
+//                    'startColor' => [
+//                        'rgb' => 'D6D8DB',
+//                    ],
+//                ],
+//                'alignment' => [
+//                    'horizontal' => Alignment::HORIZONTAL_LEFT,
+//                ],
+//                'font' => [
+//                    'bold' => true,
+//                    'size' => 14,
+//                ],
+//            ]);
 
-            $r++;
+//            $r++;
 
-            $payments = $accountNode['Payments'] ?? [];
+            $payments = $bucket['Payments'] ?? [];
             foreach ($payments as $p) {
 
                 $paymentDate  = formatXeroDate($p['Date'] ?? '');
@@ -305,33 +317,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $lineitemtext = xss($desc);
                         }
                         
-                        $trackingItems = $li['Tracking'] ?? [];
-                        $trackingitemtext = '';
-                        foreach ($trackingItems as $ti) {
-                            $trackingName = $ti['TrackingName'] ?? '';
-                            $trackingOption = $ti['TrackingOption'] ?? '';
-                            if (count($trackingItems) > 1) {
-                                $trackingitemtext = $trackingitemtext . xss($trackingName) . " | " . xss($trackingOption) . "\n";
-                            } else {
-                                $trackingitemtext =   xss($trackingName) . " | " . xss($trackingOption);
-                            }
-                        }
-                        $trackingitemtext = rtrim($trackingitemtext, "\r\n");
                     }
                     $lineitemtext = rtrim($lineitemtext, "\r\n");
 
                     $sheet->setCellValue("D{$r}", xss($lineitemtext));
-                    $sheet->setCellValue("F{$r}", xss($trackingitemtext));
                 }
 
                 $sheet->setCellValue("E{$r}", xss($currencyCode));
 
-                $sheet->setCellValue("G{$r}", xss($amount));
+                $sheet->setCellValue("F{$r}", xss($amount));
                 $r++;
             }
             $r++;
-        }
-        $r++;
+//        }
+//        $r++;
     }
 
 
@@ -339,11 +338,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Format amount column
         $lastRow = max(2, $r - 1);
-        $sheet->getStyle("G2:G{$lastRow}")
+        $sheet->getStyle("F2:F{$lastRow}")
             ->getNumberFormat()
             ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
 
-        $sheet->getStyle("G1:G{$lastRow}")
+        $sheet->getStyle("F1:F{$lastRow}")
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
@@ -351,7 +350,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
-        $sheet->getStyle("A1:G1")
+        $sheet->getStyle("A1:F1")
             ->getFont()
             ->setBold(true);
 
@@ -359,12 +358,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ->getAlignment()
             ->setWrapText(true);
 
-        $sheet->getStyle("A2:GS{$lastRow}")
+        $sheet->getStyle("A2:F{$lastRow}")
             ->getAlignment()
             ->setVertical(Alignment::VERTICAL_CENTER);
 
         // Basic usability niceties
-        foreach (range('A', 'G') as $col) {
+        foreach (range('A', 'F') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         $sheet->freezePane('A2');
@@ -372,7 +371,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sheet->setSelectedCell('A2');
 
         $sheet->getPageSetup()
-            ->setPrintArea("A1:G{$r}")
+            ->setPrintArea("A1:F{$r}")
             ->setPaperSize(PageSetup::PAPERSIZE_A4)
             ->setFitToWidth(1)
             ->setFitToHeight(0);

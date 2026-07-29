@@ -117,3 +117,33 @@ code exists
 token aquired. 
 
 tenantID: 9efdf86e-54c2-457a-ad5d-0166c8746818 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=f9d69a88f3d5d81f8f23495f46fb0b53&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=8BAD090B985841DD80816C944F789704 
+ 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=5f975aeb8798cb335c13146378d52950&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=1104D65D35A9490A9AC36E4D590AF0C5 
+ 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=e2e13d14a5bcbdcaf6a2546182b31cf2&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=1104D65D35A9490A9AC36E4D590AF0C5 
+ 
+code exists 
+token aquired. 
+
+tenantID: 67d68f7d-83f8-41e9-bd2c-a54384f9e49b 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=ed89f5c8dbcfc1a97fbe8e297c49221e&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=1104D65D35A9490A9AC36E4D590AF0C5 
+ 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=c12c85b83d2b59087d9fa314861b67f6&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=1104D65D35A9490A9AC36E4D590AF0C5 
+ 
+code exists 
+token aquired. 
+
+tenantID: 67d68f7d-83f8-41e9-bd2c-a54384f9e49b 
+authorizationUrl:  
+ https://login.xero.com/identity/connect/authorize?scope=openid%20profile%20email%20offline_access%20accounting.settings.read%20accounting.invoices.read%20accounting.payments.read%20accounting.banktransactions.read%20accounting.contacts.read%20accounting.manualjournals.read&state=92c272c0b2d5fb344bc4181a0b7201b3&response_type=code&approval_prompt=auto&redirect_uri=http%3A%2F%2Flocalhost%2Fxero-php-oauth2-app%2Fcallback.php&client_id=1104D65D35A9490A9AC36E4D590AF0C5 
+ 
+code exists 
+token aquired. 
+
+tenantID: 67d68f7d-83f8-41e9-bd2c-a54384f9e49b 
