@@ -218,6 +218,7 @@ echo
 echo
 "<div class=\"row\">
   <div class=\"col-sm-2\" style=\"padding-top:20px;\"><a href=\"addartwork.php\" class=\"btn btn-primary\">Add Artwork</a></div>
+  <div class=\"col-sm-2\" style=\"padding-top:20px;\"><a href=\"exportartworks.php?searchstring=" . urlencode($searchstring) . "\" class=\"btn btn-primary\">Export to Excel</a></div>
 </div>";
 
 $con->close();
